@@ -20,6 +20,10 @@ A lightweight proxy that routes Claude Code's Anthropic API calls to **NVIDIA NI
 
 </div>
 
+> This `andres20980/claude-free` fork is maintained for WSL, Claude Code in
+> VSCode, and NVIDIA NIM auto-routing. See [OUR_CHANGES.md](OUR_CHANGES.md) for
+> the differences from `Rishurajgautam24/free-claude-code`.
+
 <div align="center">
   <img src="pic.png" alt="Free Claude Code in action" width="700">
   <p><em>Claude Code running via NVIDIA NIM, completely free</em></p>
