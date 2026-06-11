@@ -1,0 +1,22 @@
+# docker-compose.yml para ejecutar free-claude-code fácilmente
+version: "3.9"
+
+services:
+  proxy:
+    build: .
+    container_name: claude-free-proxy
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      # Ejemplo de configuración - reemplace con sus propias claves o deje vacío para LM Studio
+      - NVIDIA_NIM_API_KEY=${NVIDIA_NIM_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      # LM Studio (si se usa localmente, el contenedor debe poder alcanzar el host)
+      # En Docker Desktop para Mac/Windows se puede usar host.docker.internal
+      # - LM_STUDIO_BASE_URL=http://host.docker.internal:1234/v1
+    # Volumen opcional para persistir el espacio de trabajo del agente entre reinicios
+    volumes:
+      - ./agent_workspace:/app/agent_workspace
+    # Si desea usar la red del host para acceder a LM Studio ejecutado en el host:
+    # network_mode: "host"
