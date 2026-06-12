@@ -374,9 +374,9 @@ def test_convert_assistant_interleaved_order_preserved():
     msg = result[0]
     # Expected: thinking1, text, thinking2 in that order within content; tool_calls at end
     expected_content = "<think>\nFirst thought.\n</think>\n\nHere is the answer.\n\n<think>\nSecond thought.\n</think>"
-    assert msg["content"] == expected_content, (
-        f"Interleaved order lost. Got: {msg['content']!r}"
-    )
+    assert (
+        msg["content"] == expected_content
+    ), f"Interleaved order lost. Got: {msg['content']!r}"
     assert len(msg["tool_calls"]) == 1
 
 

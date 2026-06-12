@@ -13,6 +13,7 @@ from config.settings import Settings
 from .command_utils import extract_command_prefix, extract_filepaths_from_command
 from .detection import (
     is_filepath_extraction_request,
+    is_models_request,
     is_prefix_detection_request,
     is_quota_check_request,
     is_suggestion_mode_request,
@@ -126,6 +127,29 @@ def try_filepath_mock(
     )
 
 
+def try_models_mock(
+    request_data: MessagesRequest, settings: Settings
+) -> MessagesResponse | None:
+    """Mock models list requests."""
+    if not settings.enable_models_list_mock:
+        return None
+    if not is_models_request(request_data):
+        return None
+
+    logger.info("Optimization: Mocked models list request")
+    # Return a basic models list response based on configured models
+    # In a real implementation, we'd return the actual configured models
+    # For now, return a minimal valid response
+    return MessagesResponse(
+        id=f"msg_{uuid.uuid4()}",
+        model=request_data.model,
+        role="assistant",
+        content=[{"type": "text", "text": '{"object": "list", "data": []}'}],
+        stop_reason="end_turn",
+        usage=Usage(input_tokens=10, output_tokens=5),
+    )
+
+
 # Cheapest/most common optimizations first for faster short-circuit.
 OPTIMIZATION_HANDLERS = [
     try_quota_mock,
@@ -133,6 +157,7 @@ OPTIMIZATION_HANDLERS = [
     try_title_skip,
     try_suggestion_skip,
     try_filepath_mock,
+    try_models_mock,
 ]
 
 

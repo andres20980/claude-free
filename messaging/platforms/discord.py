@@ -1,8 +1,9 @@
-"""
-Discord Platform Adapter
+"""Discord Platform Adapter
 
 Implements MessagingPlatform for Discord using discord.py.
 """
+
+from __future__ import annotations
 
 import asyncio
 import contextlib
@@ -23,10 +24,12 @@ from .base import MessagingPlatform
 AUDIO_EXTENSIONS = (".ogg", ".mp4", ".mp3", ".wav", ".m4a")
 
 _discord_module: Any = None
+_discord: Any = None
 try:
     import discord as _discord_import
 
     _discord_module = _discord_import
+    _discord = _discord_module
     DISCORD_AVAILABLE = True
 except ImportError:
     DISCORD_AVAILABLE = False
@@ -36,11 +39,11 @@ DISCORD_MESSAGE_LIMIT = 2000
 
 def _get_discord() -> Any:
     """Return the discord module. Raises if not available."""
-    if not DISCORD_AVAILABLE or _discord_module is None:
+    if not DISCORD_AVAILABLE or _discord is None:
         raise ImportError(
             "discord.py is required. Install with: pip install discord.py"
         )
-    return _discord_module
+    return _discord
 
 
 def _parse_allowed_channels(raw: str | None) -> set[str]:
@@ -50,8 +53,7 @@ def _parse_allowed_channels(raw: str | None) -> set[str]:
     return {s.strip() for s in raw.split(",") if s.strip()}
 
 
-if DISCORD_AVAILABLE and _discord_module is not None:
-    _discord = _discord_module
+if DISCORD_AVAILABLE and _discord is not None:
 
     class _DiscordClient(_discord.Client):
         """Internal Discord client that forwards events to DiscordPlatform."""
@@ -72,8 +74,9 @@ if DISCORD_AVAILABLE and _discord_module is not None:
         async def on_message(self, message: Any) -> None:
             """Handle incoming Discord messages."""
             await self._platform._handle_client_message(message)
+
 else:
-    _DiscordClient = None
+    _DiscordClient = None  # type: ignore[assignment,misc]
 
 
 class DiscordPlatform(MessagingPlatform):
@@ -107,7 +110,8 @@ class DiscordPlatform(MessagingPlatform):
         intents = discord.Intents.default()
         intents.message_content = True
 
-        assert _DiscordClient is not None
+        if _DiscordClient is None:
+            raise ImportError("discord.py is required but failed to load")
         self._client = _DiscordClient(self, intents)
         self._message_handler: Callable[[IncomingMessage], Awaitable[None]] | None = (
             None
@@ -350,7 +354,7 @@ class DiscordPlatform(MessagingPlatform):
         )
 
         max_wait = 30
-        waited = 0
+        waited: float = 0.0
         while not self._connected and waited < max_wait:
             await asyncio.sleep(0.5)
             waited += 0.5
@@ -370,7 +374,7 @@ class DiscordPlatform(MessagingPlatform):
         if self._start_task and not self._start_task.done():
             try:
                 await asyncio.wait_for(self._start_task, timeout=5.0)
-            except TimeoutError, asyncio.CancelledError:
+            except (TimeoutError, asyncio.CancelledError):
                 self._start_task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await self._start_task
@@ -443,7 +447,7 @@ class DiscordPlatform(MessagingPlatform):
         try:
             msg = await channel.fetch_message(int(message_id))
             await msg.delete()
-        except discord.NotFound, discord.Forbidden:
+        except (discord.NotFound, discord.Forbidden):
             pass
 
     async def delete_messages(self, chat_id: str, message_ids: list[str]) -> None:

@@ -23,8 +23,9 @@ class TreeQueueProcessor:
     def __init__(
         self,
         queue_update_callback: Callable[[MessageTree], Awaitable[None]] | None = None,
-        node_started_callback: Callable[[MessageTree, str], Awaitable[None]]
-        | None = None,
+        node_started_callback: (
+            Callable[[MessageTree, str], Awaitable[None]] | None
+        ) = None,
     ):
         self._queue_update_callback = queue_update_callback
         self._node_started_callback = node_started_callback

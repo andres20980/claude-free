@@ -138,7 +138,8 @@ class SessionStore:
 
     def _flush_save(self) -> dict:
         """Cancel pending timer and snapshot current state. Caller must hold self._lock.
-        Returns snapshot dict; caller must call _write_data(snapshot) outside the lock."""
+        Returns snapshot dict; caller must call _write_data(snapshot) outside the lock.
+        """
         if self._save_timer is not None:
             self._save_timer.cancel()
             self._save_timer = None

@@ -1,5 +1,7 @@
 """Pydantic models for Anthropic-compatible requests."""
 
+from __future__ import annotations
+
 from enum import StrEnum
 from typing import Any, Literal
 
@@ -100,6 +102,8 @@ class MessagesRequest(BaseModel):
     extra_body: dict[str, Any] | None = None
     original_model: str | None = None
     resolved_provider_model: str | None = None
+    resolved_provider_model_candidates: list[str] = []
+    provider_model_candidates: list[str] = []
     auto_model_tier: str | None = None
     auto_model_reason: str | None = None
 
@@ -123,11 +127,12 @@ class MessagesRequest(BaseModel):
         if self.original_model is None:
             self.original_model = self.model
 
-        resolved_full, routing = settings.resolve_request_model(
+        candidates, routing = settings.resolve_request_model_candidates(
             self.original_model,
             messages=list(self.messages),
             tool_count=len(self.tools) if self.tools else 0,
         )
+        resolved_full = candidates[0]
         if routing is not None:
             self.auto_model_tier = routing.tier
             self.auto_model_reason = routing.reason
@@ -142,6 +147,13 @@ class MessagesRequest(BaseModel):
                 self._strip_manual_model_override()
 
         self.resolved_provider_model = resolved_full
+        self.resolved_provider_model_candidates = candidates
+        primary_provider = Settings.parse_provider_type(resolved_full)
+        self.provider_model_candidates = [
+            Settings.parse_model_name(candidate)
+            for candidate in candidates
+            if Settings.parse_provider_type(candidate) == primary_provider
+        ]
         self.model = Settings.parse_model_name(resolved_full)
 
         if self.model != self.original_model:

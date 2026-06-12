@@ -3,6 +3,8 @@
 Contains MessageState, MessageNode, and MessageTree classes.
 """
 
+from __future__ import annotations
+
 import asyncio
 from collections import deque
 from contextlib import asynccontextmanager
@@ -109,9 +111,9 @@ class MessageNode:
             "session_id": self.session_id,
             "children_ids": self.children_ids,
             "created_at": self.created_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "error_message": self.error_message,
         }
 
@@ -138,9 +140,11 @@ class MessageNode:
             session_id=data.get("session_id"),
             children_ids=data.get("children_ids", []),
             created_at=datetime.fromisoformat(data["created_at"]),
-            completed_at=datetime.fromisoformat(data["completed_at"])
-            if data.get("completed_at")
-            else None,
+            completed_at=(
+                datetime.fromisoformat(data["completed_at"])
+                if data.get("completed_at")
+                else None
+            ),
             error_message=data.get("error_message"),
         )
 
@@ -277,7 +281,10 @@ class MessageTree:
 
             logger.debug(f"Node {node_id} state -> {state.value}")
 
-    async def enqueue(self, node_id: str) -> int:
+    async def enqueue(
+        self,
+        node_id: str,
+    ) -> int:
         """
         Add a node to the processing queue.
 

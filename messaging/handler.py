@@ -134,9 +134,9 @@ class ClaudeMessageHandler:
             code_inline=discord_code_inline if is_discord else mdv2_code_inline,
             escape_code=escape_discord_code if is_discord else escape_md_v2_code,
             escape_text=escape_discord if is_discord else escape_md_v2,
-            render_markdown=render_markdown_to_discord
-            if is_discord
-            else render_markdown_to_mdv2,
+            render_markdown=(
+                render_markdown_to_discord if is_discord else render_markdown_to_mdv2
+            ),
         )
         self._limit_chars = 1900 if is_discord else 3900
 

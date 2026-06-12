@@ -23,3 +23,5 @@ server.log
 .coverage
 coverage.xml
 htmlcov/
+site/
+.cache/

@@ -1,5 +1,8 @@
 """Centralized configuration using Pydantic Settings."""
 
+from __future__ import annotations
+
+import json
 from functools import lru_cache
 from typing import cast
 
@@ -41,6 +44,18 @@ class Settings(BaseSettings):
     model_opus: str | None = Field(default=None, validation_alias="MODEL_OPUS")
     model_sonnet: str | None = Field(default=None, validation_alias="MODEL_SONNET")
     model_haiku: str | None = Field(default=None, validation_alias="MODEL_HAIKU")
+    model_fallbacks: list[str] = Field(
+        default_factory=list, validation_alias="MODEL_FALLBACKS"
+    )
+    model_opus_fallbacks: list[str] = Field(
+        default_factory=list, validation_alias="MODEL_OPUS_FALLBACKS"
+    )
+    model_sonnet_fallbacks: list[str] = Field(
+        default_factory=list, validation_alias="MODEL_SONNET_FALLBACKS"
+    )
+    model_haiku_fallbacks: list[str] = Field(
+        default_factory=list, validation_alias="MODEL_HAIKU_FALLBACKS"
+    )
 
     # ==================== Automatic Model Routing ====================
     auto_model_enabled: bool = Field(
@@ -85,6 +100,7 @@ class Settings(BaseSettings):
     enable_title_generation_skip: bool = True
     enable_suggestion_mode_skip: bool = True
     enable_filepath_extraction_mock: bool = True
+    enable_models_list_mock: bool = True
 
     # ==================== NIM Settings ====================
     nim: NimSettings = Field(default_factory=NimSettings)
@@ -144,11 +160,33 @@ class Settings(BaseSettings):
             )
         return v
 
-    @field_validator("model", "model_opus", "model_sonnet", "model_haiku")
+    @field_validator(
+        "model_fallbacks",
+        "model_opus_fallbacks",
+        "model_sonnet_fallbacks",
+        "model_haiku_fallbacks",
+        mode="before",
+    )
     @classmethod
-    def validate_model_format(cls, v: str | None) -> str | None:
-        if v is None:
-            return None
+    def parse_model_fallbacks(cls, v) -> list[str]:
+        if v is None or v == "":
+            return []
+        if isinstance(v, str):
+            stripped = v.strip()
+            if not stripped:
+                return []
+            if stripped.startswith("["):
+                parsed = json.loads(stripped)
+                if not isinstance(parsed, list):
+                    raise ValueError("Model fallbacks JSON value must be a list")
+                return [str(item).strip() for item in parsed if str(item).strip()]
+            return [item.strip() for item in stripped.split(",") if item.strip()]
+        if isinstance(v, list):
+            return [str(item).strip() for item in v if str(item).strip()]
+        raise ValueError("Model fallbacks must be a comma-separated string or list")
+
+    @staticmethod
+    def _validate_model_format_value(v: str) -> str:
         valid_providers = ("nvidia_nim", "open_router", "lmstudio")
         if "/" not in v:
             raise ValueError(
@@ -163,6 +201,23 @@ class Settings(BaseSettings):
                 f"Supported: 'nvidia_nim', 'open_router', 'lmstudio'"
             )
         return v
+
+    @field_validator("model", "model_opus", "model_sonnet", "model_haiku")
+    @classmethod
+    def validate_model_format(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        return cls._validate_model_format_value(v)
+
+    @field_validator(
+        "model_fallbacks",
+        "model_opus_fallbacks",
+        "model_sonnet_fallbacks",
+        "model_haiku_fallbacks",
+    )
+    @classmethod
+    def validate_model_fallback_formats(cls, v: list[str]) -> list[str]:
+        return [cls._validate_model_format_value(item) for item in v]
 
     @field_validator("auto_model_default")
     @classmethod
@@ -219,6 +274,35 @@ class Settings(BaseSettings):
             return self.model_sonnet
         return self.model
 
+    def _fallbacks_for_tier(self, tier: ModelTier) -> list[str]:
+        if tier == "opus":
+            return self.model_opus_fallbacks
+        if tier == "haiku":
+            return self.model_haiku_fallbacks
+        return self.model_sonnet_fallbacks
+
+    @staticmethod
+    def _dedupe_models(models: list[str]) -> list[str]:
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for model in models:
+            if model in seen:
+                continue
+            seen.add(model)
+            deduped.append(model)
+        return deduped
+
+    def resolve_model_tier_candidates(self, tier: ModelTier) -> list[str]:
+        """Resolve a tier to primary model plus configured fallback candidates."""
+        return self._dedupe_models(
+            [
+                self.resolve_model_tier(tier),
+                *self._fallbacks_for_tier(tier),
+                *self.model_fallbacks,
+                self.model,
+            ]
+        )
+
     def resolve_request_model(
         self,
         claude_model_name: str,
@@ -238,6 +322,30 @@ class Settings(BaseSettings):
             allow_opus=self.auto_model_allow_opus,
         )
         return self.resolve_model_tier(decision.tier), decision
+
+    def resolve_request_model_candidates(
+        self,
+        claude_model_name: str,
+        *,
+        messages: list[object] | None = None,
+        tool_count: int = 0,
+    ) -> tuple[list[str], ModelRoutingDecision | None]:
+        """Resolve a request to ordered provider/model candidates."""
+        if not self.auto_model_enabled:
+            primary = self.resolve_model(claude_model_name)
+            return (
+                self._dedupe_models([primary, *self.model_fallbacks, self.model]),
+                None,
+            )
+
+        decision = route_model_tier(
+            requested_model=claude_model_name,
+            messages=messages,
+            tool_count=tool_count,
+            auto_default=self.auto_model_default,
+            allow_opus=self.auto_model_allow_opus,
+        )
+        return self.resolve_model_tier_candidates(decision.tier), decision
 
     @staticmethod
     def parse_provider_type(model_string: str) -> str:

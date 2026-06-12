@@ -1,352 +1,297 @@
-<div align="center">
+# Free Claude Code (español)
 
-# Free Claude Code
+### Use Claude Code CLI & VSCode gratis. Sin necesidad de clave de API de Anthropic.
 
-### Use Claude Code CLI & VSCode for free. No Anthropic API key required.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Licencia: MIT](https://img.shields.io/badge/Licencia-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Python 3.14](https://img.shields.io/badge/python-3.14-3776ab.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=for-the-badge)](https://github.com/astral-sh/uv)
-[![Tested with Pytest](https://img.shields.io/badge/testing-Pytest-00c0ff.svg?style=for-the-badge)](https://github.com/Alishahryar1/free-claude-code/actions/workflows/tests.yml)
-[![Type checking: Ty](https://img.shields.io/badge/type%20checking-ty-ffcc00.svg?style=for-the-badge)](https://pypi.org/project/ty/)
-[![Code style: Ruff](https://img.shields.io/badge/code%20formatting-ruff-f5a623.svg?style=for-the-badge)](https://github.com/astral-sh/ruff)
-[![Logging: Loguru](https://img.shields.io/badge/logging-loguru-4ecdc4.svg?style=for-the-badge)](https://github.com/Delgan/loguru)
+[![uv](https://img.shields.io/badge/uv-astral-sh-f5a623.svg?style=for-the-badge)](https://github.com/astral-sh/uv)
+[![Probado con Pytest](https://img.shields.io/badge/testing-Pytest-00c0ff.svg?style=for-the-badge)](https://github.com/Alishahryar1/free-claude-code/actions/workflows/tests.yml)
+[![Comprobación de tipos: Ty](https://img.shields.io/badge/tipo%20comprobación-ty-ffcc00.svg?style=for-the-badge)](https://pypi.org/project/ty/)
+[![Estilo de código: Ruff](https://img.shields.io/badge/formato%20de%20código-ruff-f5a623.svg?style=for-the-badge)](https://github.com/astral-sh/ruff)
+[![Registro: Loguru](https://img.shields.io/badge/registro-loguru-4ecdc4.svg?style=for-the-badge)](https://github.com/Delgan/loguru)
 
-A lightweight proxy that routes Claude Code's Anthropic API calls to **NVIDIA NIM** (40 req/min free), **OpenRouter** (hundreds of models), or **LM Studio** (fully local).
-
-[Features](#features) · [Quick Start](#quick-start) · [How It Works](#how-it-works) · [Discord Bot](#discord-bot) · [Configuration](#configuration)
+Un proxy ligero que redirige las llamadas de API de Anthropic de Claude Code a **NVIDIA NIM** (40 req/min gratis), **OpenRouter** (cientos de modelos) o **LM Studio** (totalmente local).
 
 ---
 
-</div>
+## ⚡ Inicio Rápido (5 minutos)
 
-> This `andres20980/claude-free` fork is maintained for WSL, Claude Code in
-> VSCode, and NVIDIA NIM auto-routing. See [OUR_CHANGES.md](OUR_CHANGES.md) for
-> the differences from `Rishurajgautam24/free-claude-code`.
+### 1. Requisitos previos
 
-<div align="center">
-  <img src="pic.png" alt="Free Claude Code in action" width="700">
-  <p><em>Claude Code running via NVIDIA NIM, completely free</em></p>
-</div>
+- [Claude Code](https://github.com/anthropics/claude-code) instalado
+- [uv](https://github.com/astral-sh/uv) instalado (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- Una **clave de API** de al menos uno:
+  - **NVIDIA NIM**: <https://build.nvidia.com/settings/api-keys> (40 req/min gratis ⭐)
+  - **OpenRouter**: <https://openrouter.ai/keys> (cientos de modelos)
+  - **LM Studio**: Ejecutar localmente (sin clave)
 
-## Features
-
-| Feature                    | Description                                                                                                          |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **Zero Cost**              | 40 req/min free on NVIDIA NIM. Free models on OpenRouter. Fully local with LM Studio                                 |
-| **Drop-in Replacement**    | Set 2 env vars. No modifications to Claude Code CLI or VSCode extension needed                                       |
-| **3 Providers**            | NVIDIA NIM, OpenRouter (hundreds of models), LM Studio (local & offline)                                             |
-| **Per-Model Mapping**      | Route Opus / Sonnet / Haiku requests to different models and providers. Mix providers freely per model               |
-| **Thinking Token Support** | Parses `<think>` tags and `reasoning_content` into native Claude thinking blocks                                     |
-| **Heuristic Tool Parser**  | Models outputting tool calls as text are auto-parsed into structured tool use                                        |
-| **Request Optimization**   | 5 categories of trivial API calls intercepted locally, saving quota and latency                                      |
-| **Discord Bot**            | Remote autonomous coding with tree-based threading, session persistence, and live progress (Telegram also supported) |
-| **Smart Rate Limiting**    | Proactive rolling-window throttle + reactive 429 exponential backoff + optional concurrency cap across all providers |
-| **Subagent Control**       | Task tool interception forces `run_in_background=False`. No runaway subagents                                        |
-| **Extensible**             | Clean `BaseProvider` and `MessagingPlatform` ABCs. Add new providers or platforms easily                             |
-
-## Quick Start
-
-### Prerequisites
-
-1. Get an API key (or use LM Studio locally):
-   - **NVIDIA NIM**: [build.nvidia.com/settings/api-keys](https://build.nvidia.com/settings/api-keys)
-   - **OpenRouter**: [openrouter.ai/keys](https://openrouter.ai/keys)
-   - **LM Studio**: No API key needed. Run locally with [LM Studio](https://lmstudio.ai)
-2. Install [Claude Code](https://github.com/anthropics/claude-code)
-3. Install [uv](https://github.com/astral-sh/uv)
-4. Update uv if already installed: `uv self update`
-
-### Clone & Configure
+### 2. Clonar y configurar (2 minutos)
 
 ```bash
-git clone https://github.com/Alishahryar1/free-claude-code.git
-cd free-claude-code
+git clone https://github.com/andres20980/claude-free.git
+cd claude-free
 cp .env.example .env
 ```
 
-Choose your provider and edit `.env`:
+Edita `.env` y elige **una** de estas opciones:
 
-<details>
-<summary><b>NVIDIA NIM</b> (40 req/min free, recommended)</summary>
-
+**Option A: NVIDIA NIM** (recomendado, 40 req/min gratis)
 ```dotenv
-NVIDIA_NIM_API_KEY="nvapi-your-key-here"
-
-MODEL_OPUS="nvidia_nim/z-ai/glm4.7"
-MODEL_SONNET="nvidia_nim/moonshotai/kimi-k2-thinking"
-MODEL_HAIKU="nvidia_nim/stepfun-ai/step-3.5-flash"
-MODEL="nvidia_nim/z-ai/glm4.7"                     # fallback
+NVIDIA_NIM_API_KEY="nvapi-tu-clave-aquí"
+MODEL="nvidia_nim/z-ai/glm4.7"
 ```
 
-</details>
-
-<details>
-<summary><b>OpenRouter</b> (hundreds of models)</summary>
-
+**Option B: OpenRouter** (cientos de modelos)
 ```dotenv
-OPENROUTER_API_KEY="sk-or-your-key-here"
-
-MODEL_OPUS="open_router/deepseek/deepseek-r1-0528:free"
-MODEL_SONNET="open_router/openai/gpt-oss-120b:free"
-MODEL_HAIKU="open_router/stepfun/step-3.5-flash:free"
-MODEL="open_router/stepfun/step-3.5-flash:free"     # fallback
+OPENROUTER_API_KEY="sk-or-tu-clave-aquí"
+MODEL="open_router/deepseek/deepseek-r1-0528:free"
 ```
 
-</details>
-
-<details>
-<summary><b>LM Studio</b> (fully local, no API key)</summary>
-
+**Option C: LM Studio** (totalmente local, sin clave)
 ```dotenv
-MODEL_OPUS="lmstudio/unsloth/MiniMax-M2.5-GGUF"
-MODEL_SONNET="lmstudio/unsloth/Qwen3.5-35B-A3B-GGUF"
-MODEL_HAIKU="lmstudio/unsloth/GLM-4.7-Flash-GGUF"
-MODEL="lmstudio/unsloth/GLM-4.7-Flash-GGUF"         # fallback
+MODEL="lmstudio/unsloth/GLM-4.7-Flash-GGUF"
+# Primero, ejecuta LM Studio localmente: https://lmstudio.ai
 ```
 
-</details>
+### 3. Ejecutar (1 minuto)
 
-<details>
-<summary><b>Mix providers</b> (use multiple providers together)</summary>
-
-Each `MODEL_*` variable can use a different provider. `MODEL` is the fallback for unrecognized Claude models.
-
-```dotenv
-NVIDIA_NIM_API_KEY="nvapi-your-key-here"
-OPENROUTER_API_KEY="sk-or-your-key-here"
-
-MODEL_OPUS="nvidia_nim/moonshotai/kimi-k2.5"
-MODEL_SONNET="open_router/deepseek/deepseek-r1-0528:free"
-MODEL_HAIKU="lmstudio/unsloth/GLM-4.7-Flash-GGUF"
-MODEL="nvidia_nim/z-ai/glm4.7"                      # fallback
-```
-
-</details>
-
-### Run It
-
-**Terminal 1:** Start the proxy server:
-
+**Terminal 1:** Inicia el servidor proxy
 ```bash
 uv run uvicorn server:app --host 0.0.0.0 --port 8082
 ```
 
-**Terminal 2:** Run Claude Code:
-
+**Terminal 2:** Ejecuta Claude Code
 ```bash
 ANTHROPIC_AUTH_TOKEN="freecc" ANTHROPIC_BASE_URL="http://localhost:8082" claude
 ```
 
-That's it! Claude Code now uses your configured provider for free.
+✅ **¡Listo!** Claude Code ahora usa tu proveedor de forma **gratuita**.
 
-<details>
-<summary><b>VSCode Extension Setup</b></summary>
+### 4. VSCode (opcional)
 
-1. Start the proxy server (same as above).
-2. Open Settings (`Ctrl + ,`) and search for `claude-code.environmentVariables`.
-3. Click **Edit in settings.json** and add:
+Para usar la extensión de Claude Code en VSCode:
 
+1. Abre Ajustes (`Ctrl + ,`) → busca `claude-code.environmentVariables`
+2. Edita el JSON y añade:
 ```json
 "claude-code.environmentVariables": [
   { "name": "ANTHROPIC_BASE_URL", "value": "http://localhost:8082" },
   { "name": "ANTHROPIC_AUTH_TOKEN", "value": "freecc" }
 ]
 ```
+3. Recarga las extensiones
+4. Si ves "¿Cómo quieres iniciar sesión?" → haz clic en **Consola de Anthropic** → autoriza
 
-4. Reload extensions.
-5. **If you see the login screen** ("How do you want to log in?"): Click **Anthropic Console**, then authorize. The extension will start working. You may be redirected to buy credits in the browser; ignore it, the extension already works.
+---
 
-To switch back to Anthropic models, comment out the added block and reload extensions.
+## 📋 Características
 
-</details>
+| Característica                    | Descripción                                                                                                          |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Costo cero**                    | 40 req/min gratis en NVIDIA NIM. Modelos gratis en OpenRouter. Totalmente local con LM Studio                        |
+| **Reemplazo directo**             | Define 2 variables de entorno. No se necesita modificar Claude Code CLI ni la extensión de VSCode                     |
+| **3 proveedores**                 | NVIDIA NIM, OpenRouter (cientos de modelos), LM Studio (local y offline)                                             |
+| **Mapeo por modelo**              | Ruta las peticiones de Opus / Sonnet / Haiku a distintos modelos y proveedores. Mezcla proveedores libremente por modelo |
+| **Soporte de tokens de pensamiento** | Analiza los tags `\` y `reasoning_content` para convertirlos en bloques de pensamiento nativos de Claude               |
+| **Parser heurístico de herramientas** | Los modelos que generan llamadas a herramientas como texto se convierten automáticamente en uso estructurado de herramientas |
+| **Optimización de peticiones**    | 5 categorías de llamadas API triviales se interceptan localmente, ahorrando cuota y latencia                         |
+| **Bot de Discord**                | Codificación autónoma remota con hilado basado en árboles, persistencia de sesiones y progreso en vivo (Telegram también soportado) |
+| **Límite inteligente de tasa**    | Throttle proactivo de ventana deslizante + backoff exponencial reactivo 429 + límite opcional de concurrencia entre todos los proveedores |
+| **Control de subagentes**         | Intercepción de la herramienta Task fuerza `run_in_background=False`. No hay subagentes fuera de control               |
+| **Extensible**                    | ABCs limpios `BaseProvider` y `MessagingPlatform`. Añade nuevos proveedores o plataformas fácilmente                  |
+
+### Configuración avanzada (multimodelo, mezclar proveedores, etc.)
 
 <details>
-<summary><b>Multi-Model Support (Model Picker)</b></summary>
+<summary><b>Ver opciones avanzadas</b></summary>
 
-`claude-pick` is an interactive model selector that lets you choose any model from your active provider each time you launch Claude, without editing `MODEL` in `.env`.
+#### Multimodelo (Opus, Sonnet, Haiku con diferentes proveedores)
 
-https://github.com/user-attachments/assets/9a33c316-90f8-4418-9650-97e7d33ad645
+```dotenv
+NVIDIA_NIM_API_KEY="nvapi-tu-clave-aquí"
+OPENROUTER_API_KEY="sk-or-tu-clave-aquí"
 
-**1. Install [fzf](https://github.com/junegunn/fzf)** (highly recommended for the interactive picker):
-
-```bash
-brew install fzf        # macOS/Linux
+MODEL_OPUS="nvidia_nim/z-ai/glm4.7"
+MODEL_SONNET="open_router/deepseek/deepseek-r1-0528:free"
+MODEL_HAIKU="nvidia_nim/stepfun-ai/step-3.5-flash"
+MODEL="nvidia_nim/z-ai/glm4.7"  # fallback
 ```
 
-**2. Add the alias to `~/.zshrc` or `~/.bashrc`:**
+#### Selector de modelos con `claude-pick`
+
+`claude-pick` permite elegir modelo interactivamente sin editar `.env`:
 
 ```bash
-# Use the absolute path to your cloned repo
-alias claude-pick="/absolute/path/to/free-claude-code/claude-pick"
-```
+# 1. Instala fzf
+brew install fzf  # macOS/Linux
 
-Then reload your shell (`source ~/.zshrc` or `source ~/.bashrc`) and run `claude-pick` to pick a model and launch Claude.
+# 2. Añade alias a ~/.zshrc o ~/.bashrc
+alias claude-pick="/ruta/a/claude-free/claude-pick"
 
-**Skip the picker with a fixed model** (no picker needed):
+# 3. Recarga shell
+source ~/.zshrc
 
-```bash
-alias claude-kimi='ANTHROPIC_BASE_URL="http://localhost:8082" ANTHROPIC_AUTH_TOKEN="freecc:moonshotai/kimi-k2.5" claude'
+# 4. Ejecuta
+claude-pick  # elige modelo → lanza Claude
 ```
 
 </details>
 
 ---
 
-## How It Works
+## 🔄 Cómo funciona
 
 ```
 ┌─────────────────┐        ┌──────────────────────┐        ┌──────────────────┐
-│  Claude Code    │───────>│  Free Claude Code    │───────>│  LLM Provider    │
+│  Claude Code    │───────>│  Free Claude Code    │───────>│  Proveedor LLM   │
 │  CLI / VSCode   │<───────│  Proxy (:8082)       │<───────│  NIM / OR / LMS  │
 └─────────────────┘        └──────────────────────┘        └──────────────────┘
-   Anthropic API                     │                       OpenAI-compatible
-   format (SSE)              ┌───────┴────────┐                format (SSE)
-                             │ Optimizations  │
+   Anthropic API                     │                       Formato OpenAI‑compatible
+   formato (SSE)              ┌───────┴────────┐                formato (SSE)
+                             │ Optimizaciones  │
                              ├────────────────┤
                              │ Quota probes   │
-                             │ Title gen skip │
-                             │ Prefix detect  │
-                             │ Suggestion skip│
-                             │ Filepath mock  │
+                             │ Título gen skip│
+                             │ Detección pref │
+                             │ Sugerencia skip│
+                             │ Mock ruta arch │
                              └────────────────┘
 ```
 
-- **Transparent proxy**: Claude Code sends standard Anthropic API requests to the proxy server
-- **Per-model routing**: Opus / Sonnet / Haiku requests are resolved to their model-specific backend and provider, with the default `MODEL` as fallback
-- **Request optimization**: 5 categories of trivial requests (quota probes, title generation, prefix detection, suggestions, filepath extraction) are intercepted and responded to instantly without using API quota
-- **Format translation**: real requests are translated from Anthropic format to the provider's OpenAI-compatible format and streamed back
-- **Thinking tokens**: `<think>` tags and `reasoning_content` fields are converted into native Claude thinking blocks so Claude Code renders them correctly
+- **Proxy transparente**: Claude Code envía peticiones estándar de la API de Anthropic al servidor proxy.
+- **Enrutamiento por modelo**: Las peticiones de Opus / Sonnet / Haiku se resuelven a su backend y proveedor específicos, con `MODEL` como fallback.
+- **Optimización de peticiones**: Cinco categorías de peticiones triviales (probes de cuota, generación de título, detección de prefijo, modo sugerencia, extracción de ruta de archivo) se interceptan y responden al instante sin consumir cuota.
+- **Traducción de formato**: Las peticiones reales se traducen del formato Anthropic al formato OpenAI‑compatible del proveedor y se devuelven en streaming.
+- **Tokens de pensamiento**: Los tags `\` y el campo `reasoning_content` se convierten en bloques de pensamiento nativos de Claude para que Claude Code los renderice correctamente.
 
 ---
 
-## Providers
+## 🔌 Proveedores
 
-| Provider       | Cost         | Rate Limit | Models                            | Best For                             |
-| -------------- | ------------ | ---------- | --------------------------------- | ------------------------------------ |
-| **NVIDIA NIM** | Free         | 40 req/min | Kimi K2, GLM5, Devstral, MiniMax  | Daily driver, generous free tier     |
-| **OpenRouter** | Free / Paid  | Varies     | 200+ (GPT-4o, Claude, Step, etc.) | Model variety, fallback options      |
-| **LM Studio**  | Free (local) | Unlimited  | Any GGUF model                    | Privacy, offline use, no rate limits |
+| Proveedor     | Costo        | Límite de tasa | Modelos                                  | Más adecuado para                     |
+| ------------- | ------------ | -------------- | ---------------------------------------- | ------------------------------------- |
+| **NVIDIA NIM**| Gratis       | 40 req/min     | Kimi K2, GLM5, Devstral, MiniMax         | Conductor diario, nivel gratuito generoso |
+| **OpenRouter**| Gratis / Pago| Variable       | 200+ (GPT-4o, Claude, Step, etc.)        | Variedad de modelos, opciones de fallback |
+| **LM Studio** | Gratis (local)| Ilimitado    | Cualquier modelo GGUF                    | Privacidad, uso offline, sin límites de tasa |
 
-Switch providers by changing `MODEL` in `.env`. Use the prefix format `provider/model/name`. Invalid prefix causes an error.
+Cambia de proveedor modificando `MODEL` en `.env`. Usa el prefijo `provider/model/nombre`. Un prefijo inválido provoca un error.
 
-| Provider   | MODEL prefix      | API Key Variable     | Base URL                      |
-| ---------- | ----------------- | -------------------- | ----------------------------- |
-| NVIDIA NIM | `nvidia_nim/...`  | `NVIDIA_NIM_API_KEY` | `integrate.api.nvidia.com/v1` |
-| OpenRouter | `open_router/...` | `OPENROUTER_API_KEY` | `openrouter.ai/api/v1`        |
-| LM Studio  | `lmstudio/...`    | (none)               | `localhost:1234/v1`           |
+| Proveedor   | Prefijo MODEL       | Variable de API Key       | URL Base                     |
+| ----------- | ------------------- | ------------------------ | ---------------------------- |
+| NVIDIA NIM  | `nvidia_nim/...`    | `NVIDIA_NIM_API_KEY`     | `integrate.api.nvidia.com/v1`|
+| OpenRouter  | `open_router/...`   | `OPENROUTER_API_KEY`     | `openrouter.ai/api/v1`       |
+| LM Studio   | `lmstudio/...`      | (ninguna)                | `localhost:1234/v1`          |
 
-LM Studio runs locally. Start the server in the Developer tab or via `lms server start`, load a model, and set `MODEL` to the model identifier.
+LM Studio se ejecuta localmente. Inicia el servidor en la pestaña **Developer** o mediante `lms server start`, carga un modelo y establece `MODEL` en su identificador.
 
 ---
 
-## Discord Bot
+## Bot de Discord
 
-Control Claude Code remotely from Discord. Send tasks, watch live progress, and manage multiple concurrent sessions. Telegram is also supported.
+Controla Claude Code remotamente desde Discord. Envía tareas, observa el progreso en vivo y gestiona múltiples sesiones concurrentes. Telegram también está soportado.
 
-**Capabilities:**
+### Capacidades
 
-- Tree-based message threading: reply to a message to fork the conversation
-- Session persistence across server restarts
-- Live streaming of thinking tokens, tool calls, and results
-- Unlimited concurrent Claude CLI sessions (provider concurrency controlled by `PROVIDER_MAX_CONCURRENCY`)
-- **Voice notes**: send voice messages; they are transcribed and processed like regular prompts (see [Voice Notes](#voice-notes))
-- Commands: `/stop` (cancel tasks; reply to a message to stop only that task), `/clear` (standalone: reset all sessions; reply to a message to clear that branch downwards), `/stats`
+- Hilado de mensajes basado en árbol: responde a un mensaje para bifurcar la conversación.
+- Persistencia de sesiones entre reinicios del servidor.
+- Transmisión en vivo de tokens de pensamiento, llamadas a herramientas y resultados.
+- Sesiones simultáneasIlimitadas de Claude CLI (la concurrencia del proveedor se controla con `PROVIDER_MAX_CONCURRENCY`).
+- **Notas de voz**: envía mensajes de voz; se transcriben y se procesan como prompts normales (ver [Notas de voz](#notas-de-voz)).
+- Comandos: `/stop` (cancelar tareas; responde a un mensaje para detener solo esa tarea), `/clear` (autónomo: reinicia todas las sesiones; respuesta a un mensaje: elimina esa rama hacia abajo), `/stats`.
 
-### Setup
+### Instalación
 
-1. **Create a Discord Bot**: Go to [Discord Developer Portal](https://discord.com/developers/applications), create an application, add a bot, and copy the token. Enable **Message Content Intent** under Bot settings.
-
-2. **Edit `.env`:**
+1. **Crea un Bot de Discord**: ve al [Portal de Desarrolladores de Discord](https://discord.com/developers/applications), crea una aplicación, añade un bot y copia el token. Activa **Message Content Intent** en la configuración del bot.
+2. **Edita `.env`**:
 
 ```dotenv
 MESSAGING_PLATFORM="discord"
-DISCORD_BOT_TOKEN="your_discord_bot_token"
+DISCORD_BOT_TOKEN="tu_token_de_bot_de_discord"
 ALLOWED_DISCORD_CHANNELS="123456789,987654321"
 ```
 
-> Enable Developer Mode in Discord (Settings → Advanced), then right-click a channel and "Copy ID" to get channel IDs. Comma-separate multiple channels. If empty, no channels are allowed.
+> Activa el Modo de Desarrollador en Discord (Ajustes → Avanzado), luego haz clic derecho en un canal y "Copiar ID" para obtener los IDs de canal. Separa múltiples canales con comas. Si está vacío, ningún canal está permitido.
 
-3. **Configure the workspace** (where Claude will operate):
+3. **Configura el espacio de trabajo** (donde Claude operará):
 
 ```dotenv
 CLAUDE_WORKSPACE="./agent_workspace"
-ALLOWED_DIR="C:/Users/yourname/projects"
+ALLOWED_DIR="C:/Users/tu_nombre/proyectos"
 ```
 
-4. **Start the server:**
+4. **Inicia el servidor**:
 
 ```bash
 uv run uvicorn server:app --host 0.0.0.0 --port 8082
 ```
 
-5. **Invite the bot** (OAuth2 URL Generator, scopes: `bot`, permissions: Read Messages, Send Messages, Manage Messages, Read Message History). Send a task to an allowed channel and Claude responds with live thinking tokens and tool calls. Use commands above to cancel or clear.
+5. **Invita al bot** (Generador de URL de OAuth2, alcances: `bot`, permisos: Leer Mensajes, Enviar Mensajes, Gestionar Mensajes, Leer Historial de Mensajes). Envía una tarea a un canal permitido y Claude responderá con tokens de pensamiento y llamadas a herramientas en vivo. Usa los comandos anteriores para cancelar o limpiar.
 
-### Telegram (Alternative)
+### Telegram (alternativa)
 
-To use Telegram instead, set `MESSAGING_PLATFORM=telegram` and configure:
+Para usar Telegram en su lugar, establece `MESSAGING_PLATFORM=telegram` y configura:
 
 ```dotenv
 TELEGRAM_BOT_TOKEN="123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
-ALLOWED_TELEGRAM_USER_ID="your_telegram_user_id"
+ALLOWED_TELEGRAM_USER_ID="tu_id_de_usuario_de_telegram"
 ```
 
-Get a token from [@BotFather](https://t.me/BotFather); find your user ID via [@userinfobot](https://t.me/userinfobot).
+Obtén un token de [@BotFather](https://t.me/BotFather); encuentra tu ID de usuario mediante [@userinfobot](https://t.me/userinfobot).
 
-### Voice Notes
+### Notas de voz
 
-Send voice messages on Telegram or Discord; they are transcribed to text and processed as regular prompts. Two transcription backends are available:
+Envía mensajes de voz en Telegram o Discord; se transcriben a texto y se procesan como prompts normales. Dos backends de transcripción están disponibles:
 
-- **Local Whisper** (default): Uses [Hugging Face transformers Whisper](https://huggingface.co/openai/whisper-large-v3-turbo) — free, no API key, works offline, CUDA compatible. No ffmpeg required.
-- **NVIDIA NIM**: Uses NVIDIA NIM Whisper/Parkeet models via gRPC — requires `NVIDIA_NIM_API_KEY`.
+- **Whisper local** (predeterminado): usa [Hugging Face Transformers Whisper](https://huggingface.co/openai/whisper-large-v3-turbo) — gratuito, sin clave de API, funciona offline, compatible con CUDA. No se requiere ffmpeg.
+- **NVIDIA NIM**: usa modelos Whisper/Parkeet de NVIDIA NIM mediante gRPC — necesita `NVIDIA_NIM_API_KEY`.
 
-Install the optional voice extras:
+Instala los extras opcionales de voz:
 
 ```bash
-# For local Whisper (cpu/cuda)
+# Para Whisper local (cpu/cuda)
 uv sync --extra voice_local
 
-# For NVIDIA NIM transcription
+# Para transcripción de NVIDIA NIM
 uv sync --extra voice
 
-# Install both
+# Ambos
 uv sync --extra voice --extra voice_local
 ```
 
-**Configuration:**
+#### Configuración
 
-| Variable             | Description                                                                 | Default |
-| -------------------- | --------------------------------------------------------------------------- | ------- |
-| `VOICE_NOTE_ENABLED` | Enable voice note handling                                                  | `true`  |
-| `WHISPER_DEVICE`     | `cpu` \| `cuda` \| `nvidia_nim`                                             | `cpu`   |
-| `WHISPER_MODEL`      | See supported models below                                                  | `base`  |
-| `HF_TOKEN`           | Hugging Face token for faster model downloads (optional, for local Whisper) | —       |
-| `NVIDIA_NIM_API_KEY` | API key for NVIDIA NIM (required for `nvidia_nim` device)                   | —       |
+| Variable               | Descripción                                                          | Valor por defecto |
+| ---------------------- | -------------------------------------------------------------------- | ----------------- |
+| `VOICE_NOTE_ENABLED`   | Habilita el manejo de notas de voz                                   | `true`            |
+| `WHISPER_DEVICE`       | `cpu` \| `cuda` \| `nvidia_nim`                                      | `cpu`             |
+| `WHISPER_MODEL`        | Ver modelos soportados abajo                                         | `base`            |
+| `HF_TOKEN`             | Token de Hugging Face para descargas más rápidas (opcional, solo local Whisper) | — |
+| `NVIDIA_NIM_API_KEY`   | API key para NVIDIA NIM (requerido para dispositivo `nvidia_nim`)    | —                 |
 
-**Supported `WHISPER_MODEL` values:**
+#### Valores soportados de `WHISPER_MODEL`
 
-| Model                                                                       | Device         | Description                            |
-| --------------------------------------------------------------------------- | -------------- | -------------------------------------- |
-| `tiny`, `base`, `small`, `medium`, `large-v2`, `large-v3`, `large-v3-turbo` | `cpu` / `cuda` | Local Whisper (Hugging Face)           |
-| `openai/whisper-large-v3`                                                   | `nvidia_nim`   | Auto language detection (best overall) |
-| `nvidia/parakeet-ctc-1.1b-asr`                                              | `nvidia_nim`   | English-only                           |
-| `nvidia/parakeet-ctc-0.6b-asr`                                              | `nvidia_nim`   | English-only                           |
-| `nvidia/parakeet-ctc-0.6b-zh-cn`                                            | `nvidia_nim`   | Mandarin Chinese                       |
-| `nvidia/parakeet-ctc-0.6b-zh-tw`                                            | `nvidia_nim`   | Traditional Chinese                    |
-| `nvidia/parakeet-ctc-0.6b-es`                                               | `nvidia_nim`   | Spanish                                |
-| `nvidia/parakeet-ctc-0.6b-vi`                                               | `nvidia_nim`   | Vietnamese                             |
-| `nvidia/parakeet-1.1b-rnnt-multilingual-asr`                                | `nvidia_nim`   | Multilingual RNNT                      |
+| Modelo                                                            | Dispositivo         | Descripción                           |
+| ----------------------------------------------------------------- | ------------------- | ------------------------------------- |
+| `tiny`, `base`, `small`, `medium`, `large-v2`, `large-v3`, `large-v3-turbo` | `cpu` / `cuda`      | Whisper local (Hugging Face)          |
+| `openai/whisper-large-v3`                                         | `nvidia_nim`        | Detección automática de idioma (mejor global) |
+| `nvidia/parakeet-ctc-1.1b-asr`                                    | `nvidia_nim`        | Solo inglés                           |
+| `nvidia/parakeet-ctc-0.6b-asr`                                    | `nvidia_nim`        | Solo inglés                           |
+| `nvidia/parakeet-ctc-0.6b-zh-cn`                                  | `nvidia_nim`        | Chino mandarín                        |
+| `nvidia/parakeet-ctc-0.6b-zh-tw`                                  | `nvidia_nim`        | Chino tradicional                     |
+| `nvidia/parakeet-ctc-0.6b-es`                                     | `nvidia_nim`        | Español                               |
+| `nvidia/parakeet-ctc-0.6b-vi`                                     | `nvidia_nim`        | Vietnamita                            |
+| `nvidia/parakeet-1.1b-rnnt-multilingual-asr`                      | `nvidia_nim`        | Multilingüe RNNT                      |
 
 ---
 
-## Models
+## Modelos
 
 <details>
 <summary><b>NVIDIA NIM</b></summary>
 
-Full list in [`nvidia_nim_models.json`](nvidia_nim_models.json).
+Lista completa en [`nvidia_nim_models.json`](nvidia_nim_models.json).
 
-Popular models:
+Modelos populares:
 
 - `nvidia_nim/minimaxai/minimax-m2.5`
 - `nvidia_nim/qwen/qwen3.5-397b-a17b`
@@ -354,39 +299,37 @@ Popular models:
 - `nvidia_nim/stepfun-ai/step-3.5-flash`
 - `nvidia_nim/moonshotai/kimi-k2.5`
 
-Browse: [build.nvidia.com](https://build.nvidia.com/explore/discover)
+Explora: [build.nvidia.com](https://build.nvidia.com/explore/discover)
 
-Update model list:
+Actualiza la lista de modelos:
 
 ```bash
 curl "https://integrate.api.nvidia.com/v1/models" > nvidia_nim_models.json
 ```
-
 </details>
 
 <details>
 <summary><b>OpenRouter</b></summary>
 
-Hundreds of models from StepFun, OpenAI, Anthropic, Google, and more.
+Cientos de modelos de StepFun, OpenAI, Anthropic, Google y más.
 
-Popular models:
+Modelos populares:
 
 - `open_router/stepfun/step-3.5-flash:free`
 - `open_router/deepseek/deepseek-r1-0528:free`
 - `open_router/openai/gpt-oss-120b:free`
 
-Browse: [openrouter.ai/models](https://openrouter.ai/models)
+Explora: [openrouter.ai/models](https://openrouter.ai/models)
 
-Browse free models: [https://openrouter.ai/collections/free-models](https://openrouter.ai/collections/free-models)
-
+Explora modelos gratuitos: [https://openrouter.ai/collections/free-models](https://openrouter.ai/collections/free-models)
 </details>
 
 <details>
 <summary><b>LM Studio</b></summary>
 
-Run models locally with [LM Studio](https://lmstudio.ai). Load a model in the Chat or Developer tab, then set `MODEL` to its identifier.
+Ejecuta modelos localmente con [LM Studio](https://lmstudio.ai). Carga un modelo en la pestaña Chat o Developer, luego establece `MODEL` en su identificador.
 
-Examples (native tool-use support):
+Ejemplos (soporte nativo de uso de herramientas):
 
 - `LiquidAI/LFM2-24B-A2B-GGUF`
 - `unsloth/MiniMax-M2.5-GGUF`
@@ -394,83 +337,82 @@ Examples (native tool-use support):
 - `unsloth/Qwen3.5-35B-A3B-GGUF`
 - `LocoreMind/LocoOperator-4B`
 
-Browse: [model.lmstudio.ai](https://model.lmstudio.ai)
-
+Explora: [model.lmstudio.ai](https://model.lmstudio.ai)
 </details>
 
 ---
 
-## Configuration
+## Configuración
 
-| Variable                          | Description                                                                        | Default                                           |
-| --------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `MODEL`                           | Fallback model (prefix format: `provider/model/name`; invalid prefix causes error) | `nvidia_nim/stepfun-ai/step-3.5-flash`            |
-| `MODEL_OPUS`                      | Model for Claude Opus requests (optional, falls back to `MODEL`)                   | `nvidia_nim/z-ai/glm4.7`                          |
-| `MODEL_SONNET`                    | Model for Claude Sonnet requests (optional, falls back to `MODEL`)                 | `open_router/arcee-ai/trinity-large-preview:free` |
-| `MODEL_HAIKU`                     | Model for Claude Haiku requests (optional, falls back to `MODEL`)                  | `open_router/stepfun/step-3.5-flash:free`         |
-| `NVIDIA_NIM_API_KEY`              | NVIDIA API key (NIM provider)                                                      | required                                          |
-| `OPENROUTER_API_KEY`              | OpenRouter API key (OpenRouter provider)                                           | required                                          |
-| `LM_STUDIO_BASE_URL`              | LM Studio server URL                                                               | `http://localhost:1234/v1`                        |
-| `PROVIDER_RATE_LIMIT`             | LLM API requests per window                                                        | `40`                                              |
-| `PROVIDER_RATE_WINDOW`            | Rate limit window (seconds)                                                        | `60`                                              |
-| `PROVIDER_MAX_CONCURRENCY`        | Max simultaneous open provider streams                                             | `5`                                               |
-| `HTTP_READ_TIMEOUT`               | Read timeout for provider API requests (seconds)                                   | `120`                                             |
-| `HTTP_WRITE_TIMEOUT`              | Write timeout for provider API requests (seconds)                                  | `10`                                              |
-| `HTTP_CONNECT_TIMEOUT`            | Connect timeout for provider API requests (seconds)                                | `2`                                               |
-| `FAST_PREFIX_DETECTION`           | Enable fast prefix detection                                                       | `true`                                            |
-| `ENABLE_NETWORK_PROBE_MOCK`       | Enable network probe mock                                                          | `true`                                            |
-| `ENABLE_TITLE_GENERATION_SKIP`    | Skip title generation                                                              | `true`                                            |
-| `ENABLE_SUGGESTION_MODE_SKIP`     | Skip suggestion mode                                                               | `true`                                            |
-| `ENABLE_FILEPATH_EXTRACTION_MOCK` | Enable filepath extraction mock                                                    | `true`                                            |
-| `MESSAGING_PLATFORM`              | Messaging platform: `discord` or `telegram`                                        | `discord`                                         |
-| `DISCORD_BOT_TOKEN`               | Discord Bot Token                                                                  | `""`                                              |
-| `ALLOWED_DISCORD_CHANNELS`        | Comma-separated channel IDs (empty = none allowed)                                 | `""`                                              |
-| `TELEGRAM_BOT_TOKEN`              | Telegram Bot Token                                                                 | `""`                                              |
-| `ALLOWED_TELEGRAM_USER_ID`        | Allowed Telegram User ID                                                           | `""`                                              |
-| `VOICE_NOTE_ENABLED`              | Enable voice note handling                                                         | `true`                                            |
-| `WHISPER_MODEL`                   | Local Whisper model size                                                           | `base`                                            |
+| Variable                          | Descripción                                                                        | Valor por defecto                                           |
+| --------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `MODEL`                           | Modelo de fallback (formato de prefijo: `provider/model/nombre`; prefijo inválido causa error) | `nvidia_nim/stepfun-ai/step-3.5-flash`            |
+| `MODEL_OPUS`                      | Modelo para peticiones de Claude Opus (opcional, recurre a `MODEL`)                | `nvidia_nim/z-ai/glm4.7`                          |
+| `MODEL_SONNET`                    | Modelo para peticiones de Claude Sonnet (opcional, recurre a `MODEL`)              | `open_router/arcee-ai/trinity-large-preview:free` |
+| `MODEL_HAIKU`                     | Modelo para peticiones de Claude Haiku (opcional, recurre a `MODEL`)               | `open_router/stepfun/step-3.5-flash:free`         |
+| `NVIDIA_NIM_API_KEY`              | Clave de API de NVIDIA (proveedor NIM)                                             | requerida                                         |
+| `OPENROUTER_API_KEY`              | Clave de API de OpenRouter (proveedor OpenRouter)                                  | requerida                                         |
+| `LM_STUDIO_BASE_URL`              | URL del servidor de LM Studio                                                      | `http://localhost:1234/v1`                        |
+| `PROVIDER_RATE_LIMIT`             | Solicitudes de API del proveedor por ventana                                       | `40`                                              |
+| `PROVIDER_RATE_WINDOW`            | Ventana de límite de tasa (segundos)                                               | `60`                                              |
+| `PROVIDER_MAX_CONCURRENCY`        | Máximo de flujos simultáneos abiertos del proveedor                                | `5`                                               |
+| `HTTP_READ_TIMEOUT`               | Timeout de lectura para peticiones API del proveedor (segundos)                    | `120`                                             |
+| `HTTP_WRITE_TIMEOUT`              | Timeout de escritura para peticiones API del proveedor (segundos)                  | `10`                                              |
+| `HTTP_CONNECT_TIMEOUT`            | Timeout de conexión para peticiones API del proveedor (segundos)                   | `2`                                               |
+| `FAST_PREFIX_DETECTION`           | Habilita detección rápida de prefijo                                               | `true`                                            |
+| `ENABLE_NETWORK_PROBE_MOCK`       | Habilita mock de probe de red                                                      | `true`                                            |
+| `ENABLE_TITLE_GENERATION_SKIP`    | Omite la generación de título                                                      | `true`                                            |
+| `ENABLE_SUGGESTION_MODE_SKIP`     | Omite el modo sugerencia                                                           | `true`                                            |
+| `ENABLE_FILEPATH_EXTRACTION_MOCK` | Habilita mock de extracción de ruta de archivo                                     | `true`                                            |
+| `MESSAGING_PLATFORM`              | Plataforma de mensajería: `discord` o `telegram`                                   | `discord`                                         |
+| `DISCORD_BOT_TOKEN`               | Token de Bot de Discord                                                            | `""`                                              |
+| `ALLOWED_DISCORD_CHANNELS`        | IDs de canales de Discord separados por comas (vacío = ninguno permitido)          | `""`                                              |
+| `TELEGRAM_BOT_TOKEN`              | Token de Bot de Telegram                                                           | `""`                                              |
+| `ALLOWED_TELEGRAM_USER_ID`        | ID de usuario de Telegram permitido                                                | `""`                                              |
+| `VOICE_NOTE_ENABLED`              | Habilita manejo de notas de voz                                                    | `true`                                            |
+| `WHISPER_MODEL`                   | Tamaño del modelo Whisper local                                                    | `base`                                            |
 | `WHISPER_DEVICE`                  | `cpu` \| `cuda`                                                                    | `cpu`                                             |
-| `MESSAGING_RATE_LIMIT`            | Messaging messages per window                                                      | `1`                                               |
-| `MESSAGING_RATE_WINDOW`           | Messaging window (seconds)                                                         | `1`                                               |
-| `CLAUDE_WORKSPACE`                | Directory for agent workspace                                                      | `./agent_workspace`                               |
-| `ALLOWED_DIR`                     | Allowed directories for agent                                                      | `""`                                              |
+| `MESSAGING_RATE_LIMIT`            | Mensajes de mensajería por ventana                                                 | `1`                                               |
+| `MESSAGING_RATE_WINDOW`           | Ventana de mensajería (segundos)                                                   | `1`                                               |
+| `CLAUDE_WORKSPACE`                | Directorio para el espacio de trabajo del agente                                   | `./agent_workspace`                               |
+| `ALLOWED_DIR`                     | Directorios permitidos para el agente                                              | `""`                                              |
 
-See [`.env.example`](.env.example) for all supported parameters.
+Consulta [`.env.example`](.env.example) para todos los parámetros soportados.
 
 ---
 
-## Development
+## Desarrollo
 
-### Project Structure
+### Estructura del proyecto
 
 ```
 free-claude-code/
-├── server.py              # Entry point
-├── api/                   # FastAPI routes, request detection, optimization handlers
+├── server.py              # Punto de entrada
+├── api/                   # Rutas FastAPI, detección de peticiones, handlers de optimización
 ├── providers/             # BaseProvider, OpenAICompatibleProvider, NIM, OpenRouter, LM Studio
-│   └── common/            # Shared utils (SSE builder, message converter, parsers, error mapping)
-├── messaging/             # MessagingPlatform ABC + Discord/Telegram bots, session management
-├── config/                # Settings, NIM config, logging
-├── cli/                   # CLI session and process management
-└── tests/                 # Pytest test suite
+│   └── common/            # Utils compartidos (constructor SSE, conversor de mensajes, parsers, mapeo de errores)
+├── messaging/             # ABC MessagingPlatform + bots de Discord/Telegram, gestión de sesiones
+├── config/                # Ajustes, configuración NIM, registro
+├── cli/                   # Gestión de sesiones y procesos de CLI
+└── tests/                 # Suite de pruebas pytest
 ```
 
-### Commands
+### Comandos
 
 ```bash
-uv run ruff format     # Format code
-uv run ruff check      # Code style checking
-uv run ty check        # Type checking
-uv run pytest          # Run tests
+uv run ruff format     # Formatea código
+uv run ruff check      # Revisa estilo de código
+uv run ty check        # Comprobación de tipos
+uv run pytest          # Ejecuta tests
 ```
 
 ---
 
-## Extending
+## Extensión
 
-### Adding a Provider
+### Añadir un proveedor
 
-For **OpenAI-compatible APIs** (Groq, Together AI, etc.), extend `OpenAICompatibleProvider`:
+Para **APIs compatibles con OpenAI** (Groq, Together AI, etc.), extiende `OpenAICompatibleProvider`:
 
 ```python
 from providers.openai_compat import OpenAICompatibleProvider
@@ -482,72 +424,72 @@ class MyProvider(OpenAICompatibleProvider):
                          base_url="https://api.example.com/v1", api_key=config.api_key)
 
     def _build_request_body(self, request):
-        return build_request_body(request)  # Your request builder
+        return build_request_body(request)  # Tu constructor de petición
 ```
 
-For **fully custom APIs**, extend `BaseProvider` directly:
+Para **APIs totalmente personalizadas**, extiende `BaseProvider` directamente:
 
 ```python
 from providers.base import BaseProvider, ProviderConfig
 
 class MyProvider(BaseProvider):
     async def stream_response(self, request, input_tokens=0, *, request_id=None):
-        # Yield Anthropic SSE format events
+        # Genera eventos SSE con formato Anthropic
         ...
 ```
 
-### Adding a Messaging Platform
+### Añadir una plataforma de mensajería
 
-Extend `MessagingPlatform` in `messaging/` to add Slack or other platforms:
+Extiende `MessagingPlatform` en `messaging/` para agregar Slack u otras plataformas:
 
 ```python
 from messaging.base import MessagingPlatform
 
 class MyPlatform(MessagingPlatform):
     async def start(self):
-        # Initialize connection
+        # Inicializa la conexión
         ...
 
     async def stop(self):
-        # Cleanup
+        # Limpieza
         ...
 
     async def send_message(self, chat_id, text, reply_to=None, parse_mode=None, message_thread_id=None):
-        # Send a message
+        # Envía un mensaje
         ...
 
     async def edit_message(self, chat_id, message_id, text, parse_mode=None):
-        # Edit an existing message
+        # Edita un mensaje existente
         ...
 
     def on_message(self, handler):
-        # Register callback for incoming messages
+        # Registra callback para mensajes entrantes
         ...
 ```
 
 ---
 
-## Contributing
+## Contribuye
 
-- Report bugs or suggest features via [Issues](https://github.com/Alishahryar1/free-claude-code/issues)
-- Add new LLM providers (Groq, Together AI, etc.)
-- Add new messaging platforms (Slack, etc.)
-- Improve test coverage
-- Not accepting Docker Integration for now
-- New and interesting features
+- Informa de errores o sugiere características mediante [Issues](https://github.com/andres20980/claude-free/issues).
+- Añade nuevos proveedores de LLM (Groq, Together AI, etc.).
+- Añade nuevas plataformas de mensajería (Slack, etc.).
+- Mejora la cobertura de pruebas.
+- ¡No se acepta integración de Docker por ahora (pendiente de revisión)!
+- Nuevas y interesantes características.
 
 ```bash
-# Fork the repo, then:
-git checkout -b my-feature
-# Make your changes
+# Haz un fork del repo, luego:
+git checkout -b mi-feature
+# Haz tus cambios
 uv run ruff format && uv run ruff check && uv run ty check && uv run pytest
-# Open a pull request
+# Abre un pull request
 ```
 
 ---
 
-## License
+## Licencia
 
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+Este proyecto está licenciado bajo la **Licencia MIT**. Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
-Built with [FastAPI](https://fastapi.tiangolo.com/), [OpenAI Python SDK](https://github.com/openai/openai-python), [discord.py](https://github.com/Rapptz/discord.py), and [python-telegram-bot](https://python-telegram-bot.org/).
+Creado con [FastAPI](https://fastapi.tiangolo.com/), [OpenAI Python SDK](https://github.com/openai/openai-python), [discord.py](https://github.com/Rapptz/discord.py), y [python-telegram-bot](https://python-telegram-bot.org/).

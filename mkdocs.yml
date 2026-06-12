@@ -1,0 +1,34 @@
+site_name: Free Claude Code Documentation
+site_url: https://github.com/andres20980/claude-free
+repo_url: https://github.com/andres20980/claude-free
+repo_name: andres20980/claude-free
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - search.highlight
+    - search.share
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - tables
+nav:
+  - Home: index.md
+  - Instalación: install.md
+  - Uso: usage.md
+  - Configuración: configuration.md
+  - Proveedores: providers.md
+  - Desarrollo: development.md
+  - Contribuir: contributing.md

@@ -5,6 +5,7 @@ from unittest.mock import patch
 from api.models.anthropic import ContentBlockText, Message, MessagesRequest
 from api.optimization_handlers import (
     try_filepath_mock,
+    try_models_mock,
     try_optimizations,
     try_prefix_detection,
     try_quota_mock,
@@ -227,3 +228,39 @@ class TestTryOptimizations:
         settings.enable_filepath_extraction_mock = False
         req = _make_request("random user message")
         assert try_optimizations(req, settings) is None
+
+
+class TestTryModelsMock:
+    def test_disabled_returns_none(self):
+        settings = Settings()
+        settings.enable_models_list_mock = False
+        req = _make_request("list models")
+        with patch(
+            "api.optimization_handlers.is_models_request",
+            return_value=True,
+        ):
+            assert try_models_mock(req, settings) is None
+
+    def test_enabled_and_match_returns_response(self):
+        settings = Settings()
+        settings.enable_models_list_mock = True
+        req = _make_request("list models")
+        with patch(
+            "api.optimization_handlers.is_models_request",
+            return_value=True,
+        ):
+            result = try_models_mock(req, settings)
+        assert result is not None
+        block = result.content[0]
+        assert isinstance(block, ContentBlockText)
+        assert block.text == '{"object": "list", "data": []}'
+
+    def test_enabled_but_no_match_returns_none(self):
+        settings = Settings()
+        settings.enable_models_list_mock = True
+        req = _make_request("hello world")
+        with patch(
+            "api.optimization_handlers.is_models_request",
+            return_value=False,
+        ):
+            assert try_models_mock(req, settings) is None

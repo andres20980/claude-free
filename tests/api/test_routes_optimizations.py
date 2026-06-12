@@ -165,3 +165,21 @@ def test_stop_cli_fallback_to_manager(client):
 
     if hasattr(app.state, "cli_manager"):
         del app.state.cli_manager
+
+
+def test_create_message_models_list_mock(client, mock_settings):
+    app.dependency_overrides[get_settings] = lambda: mock_settings
+
+    payload = {
+        "model": "claude-3-sonnet",
+        "max_tokens": 100,
+        "messages": [{"role": "user", "content": "list available models"}],
+    }
+
+    with patch("api.optimization_handlers.is_models_request", return_value=True):
+        response = client.post("/v1/messages", json=payload)
+
+    assert response.status_code == 200
+    assert '{"object": "list", "data": []}' in response.json()["content"][0]["text"]
+
+    app.dependency_overrides.clear()

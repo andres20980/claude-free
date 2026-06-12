@@ -87,9 +87,11 @@ class AnthropicToOpenAIConverter:
                         "type": "function",
                         "function": {
                             "name": get_block_attr(block, "name"),
-                            "arguments": json.dumps(tool_input)
-                            if isinstance(tool_input, dict)
-                            else str(tool_input),
+                            "arguments": (
+                                json.dumps(tool_input)
+                                if isinstance(tool_input, dict)
+                                else str(tool_input)
+                            ),
                         },
                     }
                 )
@@ -133,9 +135,11 @@ class AnthropicToOpenAIConverter:
                 tool_content = get_block_attr(block, "content", "")
                 if isinstance(tool_content, list):
                     tool_content = "\n".join(
-                        item.get("text", str(item))
-                        if isinstance(item, dict)
-                        else str(item)
+                        (
+                            item.get("text", str(item))
+                            if isinstance(item, dict)
+                            else str(item)
+                        )
                         for item in tool_content
                     )
                 result.append(

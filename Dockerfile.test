@@ -1,0 +1,19 @@
+FROM python:3.14-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Install dependencies
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --active
+# Copy source code
+COPY . .
+
+# Install project
+RUN uv sync --active
+
+# Expose port
+EXPOSE 8082
+
+# Default command (can be overridden)
+CMD ["uv", "run", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8082"]

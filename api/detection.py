@@ -128,3 +128,35 @@ def is_filepath_extraction_request(
         return True, command, output
     except Exception:
         return False, "", ""
+
+
+def is_models_request(request_data: MessagesRequest) -> bool:
+    """Check if this is a models list request.
+
+    Models requests are typically GET/POST to /v1/models with minimal content.
+    In the Anthropic API format, this appears as a messages request with
+    specific characteristics we can detect.
+    """
+    # Models endpoint requests in Anthropic format have specific markers
+    # They often have empty or minimal messages and may include model-related queries
+    if len(request_data.messages) != 1:
+        return False
+
+    if request_data.messages[0].role != "user":
+        return False
+
+    # Check for common model listing patterns in the message
+    content = extract_text_from_content(request_data.messages[0].content).lower()
+
+    # Common patterns for model listing requests
+    model_indicators = [
+        "list models",
+        "available models",
+        "show models",
+        "what models",
+        "models available",
+        "/models",
+        "model list",
+    ]
+
+    return any(indicator in content for indicator in model_indicators)
