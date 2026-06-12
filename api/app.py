@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from config.logging_config import configure_logging
 from config.settings import get_settings
@@ -148,6 +149,9 @@ async def lifespan(app: FastAPI):
     app.state.messaging_platform = messaging_platform
     app.state.message_handler = message_handler
     app.state.cli_manager = cli_manager
+
+    # Instrumentator for Prometheus metrics
+    Instrumentator().instrument(app).expose(app)
 
     yield
 

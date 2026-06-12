@@ -363,7 +363,7 @@ class TranscriptBuffer:
             return
         if et in ("thinking_delta", "thinking_chunk"):
             idx = int(ev.get("index", -1))
-            seg = self._open_thinking_by_index.get(idx)
+            seg: ThinkingSegment | None = self._open_thinking_by_index.get(idx)
             if seg is None:
                 seg = self._ensure_thinking()
                 if idx >= 0:
@@ -386,7 +386,7 @@ class TranscriptBuffer:
             return
         if et in ("text_delta", "text_chunk"):
             idx = int(ev.get("index", -1))
-            seg = self._open_text_by_index.get(idx)
+            seg: TextSegment | None = self._open_text_by_index.get(idx)
             if seg is None:
                 seg = self._ensure_text()
                 if idx >= 0:
@@ -438,7 +438,7 @@ class TranscriptBuffer:
 
         if et == "tool_use_stop":
             idx = int(ev.get("index", -1))
-            seg = self._open_tools_by_index.pop(idx, None)
+            seg: ToolCallSegment | None = self._open_tools_by_index.pop(idx, None)
             if seg is not None:
                 seg.closed = True
             return
