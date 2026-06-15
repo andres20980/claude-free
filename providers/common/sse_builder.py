@@ -141,6 +141,7 @@ class SSEBuilder:
         self.blocks = ContentBlockManager()
         self._accumulated_text_parts: list[str] = []
         self._accumulated_reasoning_parts: list[str] = []
+        self._metadata_prepended = False
 
     def _format_event(self, event_type: str, data: dict[str, Any]) -> str:
         """Format as SSE string."""
@@ -267,7 +268,13 @@ class SSEBuilder:
     def emit_text_delta(self, content: str) -> str:
         """Emit text content delta."""
         self._accumulated_text_parts.append(content)
-        return self.content_block_delta(self.blocks.text_index, "text_delta", content)
+        prefix = ""
+        if not self._metadata_prepended:
+            self._metadata_prepended = True
+            prefix = f"[Model: {self.model}, {self.input_tokens} tokens]\n"
+        return self.content_block_delta(
+            self.blocks.text_index, "text_delta", prefix + content
+        )
 
     def stop_text_block(self) -> str:
         """Stop the current text block."""
