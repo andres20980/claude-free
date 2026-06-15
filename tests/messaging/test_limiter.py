@@ -67,9 +67,9 @@ class TestMessagingRateLimiter:
         await asyncio.sleep(2.5)
 
         # Expected: ~2 calls (first and last)
-        assert (
-            call_counts["msg1"] <= 2
-        ), f"Expected compaction to reduce calls, but got {call_counts.get('msg1', 0)}"
+        assert call_counts["msg1"] <= 2, (
+            f"Expected compaction to reduce calls, but got {call_counts.get('msg1', 0)}"
+        )
         assert call_counts["msg1"] >= 1, "Expected at least one call"
 
     @pytest.mark.asyncio
@@ -149,9 +149,9 @@ class TestMessagingRateLimiter:
         duration = time.time() - start
 
         # Should have waited at least ~1s
-        assert (
-            duration >= 0.9
-        ), f"Should have waited for FloodWait, but took {duration:.2f}s"
+        assert duration >= 0.9, (
+            f"Should have waited for FloodWait, but took {duration:.2f}s"
+        )
         assert call_count == 2
 
     @pytest.mark.asyncio

@@ -75,9 +75,9 @@ class TestProviderRateLimiter:
 
         # Both should report having waited reactively
         assert all(results) is True
-        assert (
-            total_time >= block_time - 0.1
-        ), f"Reactive block failed, took {total_time:.2f}s"
+        assert total_time >= block_time - 0.1, (
+            f"Reactive block failed, took {total_time:.2f}s"
+        )
 
     @pytest.mark.asyncio
     async def test_set_blocked_zero_immediately_unblocks(self):
@@ -286,9 +286,9 @@ class TestProviderRateLimiter:
         # Launch 5 tasks that each hold the slot; only 2 can be active at once
         await asyncio.gather(*(stream_task(0.05) for _ in range(5)))
 
-        assert (
-            peak_concurrent <= max_concurrency
-        ), f"Concurrency exceeded: peak={peak_concurrent}, max={max_concurrency}"
+        assert peak_concurrent <= max_concurrency, (
+            f"Concurrency exceeded: peak={peak_concurrent}, max={max_concurrency}"
+        )
 
     @pytest.mark.asyncio
     async def test_concurrency_slot_releases_on_exception(self):

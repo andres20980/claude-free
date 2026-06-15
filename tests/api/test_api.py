@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -9,7 +10,7 @@ from providers.nvidia_nim import NvidiaNimProvider
 mock_provider = MagicMock(spec=NvidiaNimProvider)
 
 # Track stream_response calls for test_model_mapping
-_stream_response_calls = []
+_stream_response_calls: list[Any] = []
 
 
 async def _mock_stream_response(*args, **kwargs):
