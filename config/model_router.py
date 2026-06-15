@@ -392,8 +392,7 @@ def route_model_tier(
         return ModelRoutingDecision("opus", "deep_signal")
 
     if (
-        tool_count == 0
-        and word_count <= 40
+        word_count <= 40
         and not has_code_marker
         and not has_code_signal
         and not has_deep_signal
