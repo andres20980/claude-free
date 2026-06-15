@@ -247,28 +247,42 @@ def extract_text_from_messages(
                 continue
             content = getattr(message, "content", "")
             if isinstance(content, str):
-                parts.append(content)
+                if "<system-reminder>" not in content:
+                    parts.append(content)
                 continue
             if isinstance(content, list):
                 for block in content:
                     text = getattr(block, "text", "")
                     if isinstance(text, str) and text:
-                        parts.append(text)
+                        if "<system-reminder>" not in text:
+                            parts.append(text)
                     elif isinstance(block, dict) and "text" in block:
-                        parts.append(block["text"])
+                        text_val = block["text"]
+                        if (
+                            isinstance(text_val, str)
+                            and "<system-reminder>" not in text_val
+                        ):
+                            parts.append(text_val)
                     elif role == "user" and getattr(block, "type", "") == "tool_result":
                         tool_content = getattr(block, "content", "")
                         if isinstance(tool_content, str):
-                            parts.append(tool_content)
+                            if "<system-reminder>" not in tool_content:
+                                parts.append(tool_content)
                         elif isinstance(tool_content, list):
                             for sub_block in tool_content:
                                 text_val = getattr(sub_block, "text", "")
                                 if isinstance(text_val, str) and text_val:
-                                    parts.append(text_val)
+                                    if "<system-reminder>" not in text_val:
+                                        parts.append(text_val)
                                 elif (
                                     isinstance(sub_block, dict) and "text" in sub_block
                                 ):
-                                    parts.append(sub_block["text"])
+                                    sub_text = sub_block["text"]
+                                    if (
+                                        isinstance(sub_text, str)
+                                        and "<system-reminder>" not in sub_text
+                                    ):
+                                        parts.append(sub_text)
 
     return "\n".join(parts)
 
