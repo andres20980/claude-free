@@ -287,6 +287,61 @@ def extract_text_from_messages(
     return "\n".join(parts)
 
 
+def extract_current_query(
+    messages: list[Any] | None,
+    system_prompt: str | list[Any] | None = None,
+) -> str:
+    """Extract only the active/current user query text to analyze for tier selection."""
+    parts: list[str] = []
+
+    # Process system prompt first if it is short
+    if system_prompt:
+        system_text = extract_text_from_messages(None, system_prompt)
+        system_words = re.findall(r"\w+", system_text.lower())
+        if len(system_words) <= 150:
+            parts.append(system_text)
+
+    if messages:
+        # Find the last message with role == "user"
+        for message in reversed(messages):
+            role = getattr(message, "role", None)
+            if role is None and isinstance(message, dict):
+                role = message.get("role")
+
+            if role == "user":
+                content = getattr(message, "content", None)
+                if content is None and isinstance(message, dict):
+                    content = message.get("content")
+
+                if isinstance(content, str):
+                    if "<system-reminder>" not in content:
+                        parts.append(content)
+                elif isinstance(content, list):
+                    for block in content:
+                        block_type = getattr(block, "type", "")
+                        if block_type == "" and isinstance(block, dict):
+                            block_type = block.get("type", "")
+
+                        # Exclude tool_result content from the active user query complexity classification,
+                        # because past tool results (like huge file reads or output errors) should not escalate
+                        # subsequent simple user queries to expensive tiers.
+                        if block_type == "tool_result":
+                            continue
+
+                        text = getattr(block, "text", "")
+                        if (text is None or text == "") and isinstance(block, dict):
+                            text = block.get("text", "")
+                        if (
+                            isinstance(text, str)
+                            and text
+                            and ("<system-reminder>" not in text)
+                        ):
+                            parts.append(text)
+                break
+
+    return "\n".join(parts)
+
+
 def route_model_tier(
     *,
     requested_model: str,
@@ -302,19 +357,16 @@ def route_model_tier(
     names keep their tier unless the request looks simple enough for Haiku or
     complex enough for Opus.
     """
-    # We analyze the system prompt only if it is short (<= 150 words) to support custom
-    # system-level instructions in unit tests/simple API calls. If it is long, it is likely
-    # boilerplate agent configuration (e.g. Claude Code listing files) which we ignore to
-    # prevent false-positive routing to expensive/slow tiers.
     system_text = (
         extract_text_from_messages(None, system_prompt) if system_prompt else ""
     )
     system_words = re.findall(r"\w+", system_text.lower())
     if len(system_words) <= 150:
-        text = extract_text_from_messages(messages, system_prompt)
+        full_text = extract_text_from_messages(messages, system_prompt)
     else:
-        text = extract_text_from_messages(messages, None)
-    override = find_model_override(text)
+        full_text = extract_text_from_messages(messages, None)
+
+    override = find_model_override(full_text)
     if override is not None:
         if override == "opus" and not allow_opus:
             return ModelRoutingDecision("sonnet", "manual_opus_disabled", True)
@@ -323,11 +375,15 @@ def route_model_tier(
     explicit_tier = classify_claude_tier(requested_model)
     base_tier = explicit_tier or auto_default
 
-    normalized = text.lower()
+    # We evaluate complexity and keywords based ONLY on the active user query
+    # (and system prompt if it is short) to prevent past tool outputs or historical
+    # error logs in the conversation from polluting the classification.
+    active_query = extract_current_query(messages, system_prompt)
+    normalized = active_query.lower()
     words = re.findall(r"\w+", normalized)
     word_count = len(words)
-    has_code_marker = "```" in text or any(
-        token in text for token in ("diff --git", "{", "};")
+    has_code_marker = "```" in active_query or any(
+        token in active_query for token in ("diff --git", "{", "};")
     )
     has_deep_signal = any(keyword in normalized for keyword in _DEEP_KEYWORDS)
     has_code_signal = any(keyword in normalized for keyword in _CODE_KEYWORDS)
