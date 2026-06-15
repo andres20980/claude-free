@@ -288,7 +288,18 @@ def route_model_tier(
     names keep their tier unless the request looks simple enough for Haiku or
     complex enough for Opus.
     """
-    text = extract_text_from_messages(messages, system_prompt)
+    # We analyze the system prompt only if it is short (<= 150 words) to support custom
+    # system-level instructions in unit tests/simple API calls. If it is long, it is likely
+    # boilerplate agent configuration (e.g. Claude Code listing files) which we ignore to
+    # prevent false-positive routing to expensive/slow tiers.
+    system_text = (
+        extract_text_from_messages(None, system_prompt) if system_prompt else ""
+    )
+    system_words = re.findall(r"\w+", system_text.lower())
+    if len(system_words) <= 150:
+        text = extract_text_from_messages(messages, system_prompt)
+    else:
+        text = extract_text_from_messages(messages, None)
     override = find_model_override(text)
     if override is not None:
         if override == "opus" and not allow_opus:
@@ -307,7 +318,7 @@ def route_model_tier(
     has_deep_signal = any(keyword in normalized for keyword in _DEEP_KEYWORDS)
     has_code_signal = any(keyword in normalized for keyword in _CODE_KEYWORDS)
 
-    if allow_opus and (has_deep_signal or word_count > 1200 or tool_count > 12):
+    if allow_opus and (has_deep_signal or word_count > 1200):
         return ModelRoutingDecision("opus", "deep_signal")
 
     if (

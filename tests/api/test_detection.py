@@ -6,8 +6,62 @@ from api.detection import (
     is_filepath_extraction_request,
     is_models_request,
     is_prefix_detection_request,
+    is_title_generation_request,
 )
 from api.models.anthropic import Message, MessagesRequest
+
+
+class TestIsTitleGenerationRequest:
+    def test_old_format_system_prompt(self):
+        """Should detect title generation with old format system prompt containing 'new conversation topic' and 'title'."""
+        req = MessagesRequest(
+            model="claude-3-sonnet",
+            messages=[Message(role="user", content="Ping")],
+            system="Generate a title for the new conversation topic.",
+        )
+        assert is_title_generation_request(req) is True
+
+    def test_new_format_system_prompt(self):
+        """Should detect title generation with new format system prompt (summarize this coding conversation)."""
+        req = MessagesRequest(
+            model="claude-3-sonnet",
+            messages=[Message(role="user", content="Here is a prompt...")],
+            system="Summarize this coding conversation in under 50 characters.\nCapture the main task.",
+        )
+        assert is_title_generation_request(req) is True
+
+    def test_new_format_user_prompt(self):
+        """Should detect title generation from the user message prompt structure."""
+        req = MessagesRequest(
+            model="claude-3-sonnet",
+            messages=[
+                Message(
+                    role="user",
+                    content="Please write a 5-10 word title for the following conversation:\n\n[Last 1 message]\n\nRespond with the title.",
+                )
+            ],
+        )
+        assert is_title_generation_request(req) is True
+
+    def test_non_title_request(self):
+        """Should return False if it is not a title generation request."""
+        req = MessagesRequest(
+            model="claude-3-sonnet",
+            messages=[Message(role="user", content="How do I write a web app?")],
+            system="You are a programming assistant.",
+        )
+        assert is_title_generation_request(req) is False
+
+    def test_with_tools_returns_false(self):
+        """Should return False if request contains tools, even if system/user text matches."""
+        from api.models.anthropic import Tool
+
+        req = MessagesRequest(
+            model="claude-3-sonnet",
+            messages=[Message(role="user", content="write a 5-10 word title")],
+            tools=[Tool(name="test_tool", input_schema={})],
+        )
+        assert is_title_generation_request(req) is False
 
 
 def _make_request(content: str, **kwargs) -> MessagesRequest:

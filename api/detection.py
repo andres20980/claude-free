@@ -29,13 +29,38 @@ def is_quota_check_request(request_data: MessagesRequest) -> bool:
 def is_title_generation_request(request_data: MessagesRequest) -> bool:
     """Check if this is a conversation title generation request.
 
-    Title generation requests are detected by a system prompt containing
-    title extraction instructions, no tools, and a single user message.
+    Title generation requests are detected by a system prompt or user message containing
+    title extraction or summarization instructions, no tools, and a single user message.
     """
-    if not request_data.system or request_data.tools:
+    if getattr(request_data, "tools", None):
         return False
-    system_text = extract_text_from_content(request_data.system).lower()
-    return "new conversation topic" in system_text and "title" in system_text
+
+    system = getattr(request_data, "system", None)
+    system_text = ""
+    if system:
+        system_text = extract_text_from_content(system).lower()
+
+    messages = getattr(request_data, "messages", None)
+    user_text = ""
+    if messages and len(messages) == 1:
+        user_text = extract_text_from_content(messages[0].content).lower()
+
+    # Matches different patterns of Claude Code title generation:
+    # 1. Old system prompt style: "new conversation topic" and "title"
+    # 2. New system prompt style: "summarize this coding conversation" or "capture the main task"
+    # 3. User message style: "write a 5-10 word title" or "title for the following conversation"
+    is_old_format = "new conversation topic" in system_text and "title" in system_text
+    is_new_system = (
+        "summarize this coding conversation" in system_text
+        or "capture the main task" in system_text
+    )
+    is_new_user = (
+        "write a 5-10 word title" in user_text
+        or "title for the following conversation" in user_text
+        or "respond with the title for the conversation and nothing else" in user_text
+    )
+
+    return is_old_format or is_new_system or is_new_user
 
 
 def is_prefix_detection_request(request_data: MessagesRequest) -> tuple[bool, str]:
