@@ -183,6 +183,19 @@ _CODE_KEYWORDS = frozenset(
     }
 )
 
+_DEEP_REGEX = re.compile(
+    r"\b("
+    + "|".join(sorted(map(re.escape, _DEEP_KEYWORDS), key=len, reverse=True))
+    + r")\b",
+    re.IGNORECASE,
+)
+_CODE_REGEX = re.compile(
+    r"\b("
+    + "|".join(sorted(map(re.escape, _CODE_KEYWORDS), key=len, reverse=True))
+    + r")\b",
+    re.IGNORECASE,
+)
+
 
 @dataclass(frozen=True)
 class ModelRoutingDecision:
@@ -385,8 +398,8 @@ def route_model_tier(
     has_code_marker = "```" in active_query or any(
         token in active_query for token in ("diff --git", "{", "};")
     )
-    has_deep_signal = any(keyword in normalized for keyword in _DEEP_KEYWORDS)
-    has_code_signal = any(keyword in normalized for keyword in _CODE_KEYWORDS)
+    has_deep_signal = bool(_DEEP_REGEX.search(active_query))
+    has_code_signal = bool(_CODE_REGEX.search(active_query))
 
     if allow_opus and (has_deep_signal or word_count > 1200):
         return ModelRoutingDecision("opus", "deep_signal")
