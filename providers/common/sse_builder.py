@@ -271,7 +271,7 @@ class SSEBuilder:
         prefix = ""
         if not self._metadata_prepended:
             self._metadata_prepended = True
-            prefix = f"[Model: {self.model}, {self.input_tokens} tokens]\n"
+            prefix = f"\033[90m[Model: \033[1;36m{self.model}\033[0;90m, \033[1;32m{self.input_tokens}\033[0;90m tokens]\033[0m\n"
         return self.content_block_delta(
             self.blocks.text_index, "text_delta", prefix + content
         )
