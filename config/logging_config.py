@@ -9,6 +9,7 @@ included at top level for easy grep/filter.
 import json
 import logging
 from pathlib import Path
+from types import FrameType
 
 from loguru import logger
 
@@ -50,7 +51,8 @@ class InterceptHandler(logging.Handler):
         except ValueError:
             level = record.levelno
 
-        frame, depth = logging.currentframe(), 2
+        frame: FrameType | None = logging.currentframe()
+        depth = 2
         while frame is not None and frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back
             depth += 1

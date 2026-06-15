@@ -249,6 +249,7 @@ class ClaudeMessageHandler:
 
         # Use pre-sent status (e.g. voice note) or send new
         status_text = self._get_initial_status(tree, parent_node_id)
+        status_msg_id: str | None = None
         if incoming.status_message_id:
             status_msg_id = incoming.status_message_id
             await self.platform.queue_edit_message(

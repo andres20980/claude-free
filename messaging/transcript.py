@@ -357,18 +357,21 @@ class TranscriptBuffer:
                 # Defensive: if a provider reuses indices without emitting a stop,
                 # close the previous open segment first.
                 self.apply({"type": "block_stop", "index": idx})
-            seg = self._ensure_thinking()
+            thinking_seg = self._ensure_thinking()
             if idx >= 0:
-                self._open_thinking_by_index[idx] = seg
+                self._open_thinking_by_index[idx] = thinking_seg
             return
         if et in ("thinking_delta", "thinking_chunk"):
             idx = int(ev.get("index", -1))
-            seg = self._open_thinking_by_index.get(idx)
-            if seg is None:
-                seg = self._ensure_thinking()
+            thinking_seg_opt = self._open_thinking_by_index.get(idx)
+            thinking_seg = (
+                self._ensure_thinking()
+                if thinking_seg_opt is None
+                else thinking_seg_opt
+            )
             if idx >= 0:
-                self._open_thinking_by_index[idx] = seg
-            seg.append(str(ev.get("text", "")))
+                self._open_thinking_by_index[idx] = thinking_seg
+            thinking_seg.append(str(ev.get("text", "")))
             return
         if et == "thinking_stop":
             idx = int(ev.get("index", -1))
@@ -380,18 +383,17 @@ class TranscriptBuffer:
             idx = int(ev.get("index", -1))
             if idx >= 0:
                 self.apply({"type": "block_stop", "index": idx})
-            seg = self._ensure_text()
+            text_seg = self._ensure_text()
             if idx >= 0:
-                self._open_text_by_index[idx] = seg
+                self._open_text_by_index[idx] = text_seg
             return
         if et in ("text_delta", "text_chunk"):
             idx = int(ev.get("index", -1))
-            seg = self._open_text_by_index.get(idx)
-            if seg is None:
-                seg = self._ensure_text()
+            text_seg_opt = self._open_text_by_index.get(idx)
+            text_seg = self._ensure_text() if text_seg_opt is None else text_seg_opt
             if idx >= 0:
-                self._open_text_by_index[idx] = seg
-            seg.append(str(ev.get("text", "")))
+                self._open_text_by_index[idx] = text_seg
+            text_seg.append(str(ev.get("text", "")))
             return
         if et == "text_stop":
             idx = int(ev.get("index", -1))
@@ -404,32 +406,32 @@ class TranscriptBuffer:
             if idx >= 0:
                 self.apply({"type": "block_stop", "index": idx})
             tool_id = str(ev.get("id", "") or "").strip()
-            name = str(ev.get("name", "") or "tool")
+            tool_name_str = str(ev.get("name", "") or "tool")
             if tool_id:
-                self._tool_name_by_id[tool_id] = name
+                self._tool_name_by_id[tool_id] = tool_name_str
 
             # Task tool indicates subagent.
-            if name == "Task":
+            if tool_name_str == "Task":
                 heading = self._task_heading_from_input(ev.get("input"))
-                seg = SubagentSegment(heading)
-                self._segments.append(seg)
-                self._subagent_push(tool_id, seg)
+                subagent_seg = SubagentSegment(heading)
+                self._segments.append(subagent_seg)
+                self._subagent_push(tool_id, subagent_seg)
                 return
 
             # Normal tool call.
             if self._in_subagent():
                 parent = self._subagent_current()
                 if parent is not None:
-                    seg = parent.set_current_tool_call(tool_id, name)
+                    tool_call_seg = parent.set_current_tool_call(tool_id, tool_name_str)
                 else:
-                    seg = ToolCallSegment(tool_id, name)
-                    self._segments.append(seg)
+                    tool_call_seg = ToolCallSegment(tool_id, tool_name_str)
+                    self._segments.append(tool_call_seg)
             else:
-                seg = ToolCallSegment(tool_id, name)
-                self._segments.append(seg)
+                tool_call_seg = ToolCallSegment(tool_id, tool_name_str)
+                self._segments.append(tool_call_seg)
 
             if idx >= 0:
-                self._open_tools_by_index[idx] = seg
+                self._open_tools_by_index[idx] = tool_call_seg
             return
 
         if et == "tool_use_delta":
@@ -438,9 +440,9 @@ class TranscriptBuffer:
 
         if et == "tool_use_stop":
             idx = int(ev.get("index", -1))
-            seg = self._open_tools_by_index.pop(idx, None)
-            if seg is not None:
-                seg.closed = True
+            tool_call_seg_opt = self._open_tools_by_index.pop(idx, None)
+            if tool_call_seg_opt is not None:
+                tool_call_seg_opt.closed = True
             return
 
         if et == "block_stop":
@@ -458,34 +460,34 @@ class TranscriptBuffer:
 
         if et == "tool_use":
             tool_id = str(ev.get("id", "") or "").strip()
-            name = str(ev.get("name", "") or "tool")
+            tool_name_str = str(ev.get("name", "") or "tool")
             if tool_id:
-                self._tool_name_by_id[tool_id] = name
+                self._tool_name_by_id[tool_id] = tool_name_str
 
-            if name == "Task":
+            if tool_name_str == "Task":
                 heading = self._task_heading_from_input(ev.get("input"))
-                seg = SubagentSegment(heading)
-                self._segments.append(seg)
-                self._subagent_push(tool_id, seg)
+                subagent_seg = SubagentSegment(heading)
+                self._segments.append(subagent_seg)
+                self._subagent_push(tool_id, subagent_seg)
                 return
 
             if self._in_subagent():
                 parent = self._subagent_current()
                 if parent is not None:
-                    seg = parent.set_current_tool_call(tool_id, name)
+                    tool_call_seg = parent.set_current_tool_call(tool_id, tool_name_str)
                 else:
-                    seg = ToolCallSegment(tool_id, name)
-                    self._segments.append(seg)
+                    tool_call_seg = ToolCallSegment(tool_id, tool_name_str)
+                    self._segments.append(tool_call_seg)
             else:
-                seg = ToolCallSegment(tool_id, name)
-                self._segments.append(seg)
+                tool_call_seg = ToolCallSegment(tool_id, tool_name_str)
+                self._segments.append(tool_call_seg)
 
-            seg.closed = True
+            tool_call_seg.closed = True
             return
 
         if et == "tool_result":
             tool_id = str(ev.get("tool_use_id", "") or "").strip()
-            name = self._tool_name_by_id.get(tool_id)
+            tool_name_opt = self._tool_name_by_id.get(tool_id)
 
             # If this was the Task tool result, close subagent context.
             if self._subagent_stack:
@@ -498,7 +500,7 @@ class TranscriptBuffer:
                     not popped
                     and tool_id
                     and top.startswith("__task_")
-                    and (name in (None, "Task"))
+                    and (tool_name_opt in (None, "Task"))
                     and looks_like_task_id
                 ):
                     self._subagent_pop("")
@@ -506,13 +508,13 @@ class TranscriptBuffer:
             if not self._show_tool_results:
                 return
 
-            seg = ToolResultSegment(
+            tool_result_seg = ToolResultSegment(
                 tool_id,
                 ev.get("content"),
-                name=name,
+                name=tool_name_opt,
                 is_error=bool(ev.get("is_error", False)),
             )
-            self._segments.append(seg)
+            self._segments.append(tool_result_seg)
             return
 
         if et == "error":
