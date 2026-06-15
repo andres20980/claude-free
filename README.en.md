@@ -73,10 +73,10 @@ Choose your provider and edit `.env`:
 ```dotenv
 NVIDIA_NIM_API_KEY="nvapi-your-key-here"
 
-MODEL_OPUS="nvidia_nim/z-ai/glm4.7"
-MODEL_SONNET="nvidia_nim/moonshotai/kimi-k2-thinking"
-MODEL_HAIKU="nvidia_nim/stepfun-ai/step-3.5-flash"
-MODEL="nvidia_nim/z-ai/glm4.7"                     # fallback
+MODEL_OPUS="nvidia_nim/z-ai/glm-5.1"
+MODEL_SONNET="nvidia_nim/meta/llama-3.3-70b-instruct"
+MODEL_HAIKU="nvidia_nim/meta/llama-3.2-3b-instruct"
+MODEL="nvidia_nim/meta/llama-3.3-70b-instruct"                     # fallback
 ```
 
 </details>
@@ -119,7 +119,7 @@ OPENROUTER_API_KEY="sk-or-your-key-here"
 MODEL_OPUS="nvidia_nim/moonshotai/kimi-k2.5"
 MODEL_SONNET="open_router/deepseek/deepseek-r1-0528:free"
 MODEL_HAIKU="lmstudio/unsloth/GLM-4.7-Flash-GGUF"
-MODEL="nvidia_nim/z-ai/glm4.7"                      # fallback
+MODEL="nvidia_nim/meta/llama-3.3-70b-instruct"                      # fallback
 ```
 
 </details>
@@ -404,10 +404,10 @@ Browse: [model.lmstudio.ai](https://model.lmstudio.ai)
 
 | Variable                          | Description                                                                        | Default                                           |
 | --------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `MODEL`                           | Fallback model (prefix format: `provider/model/name`; invalid prefix causes error) | `nvidia_nim/stepfun-ai/step-3.5-flash`            |
-| `MODEL_OPUS`                      | Model for Claude Opus requests (optional, falls back to `MODEL`)                   | `nvidia_nim/z-ai/glm4.7`                          |
-| `MODEL_SONNET`                    | Model for Claude Sonnet requests (optional, falls back to `MODEL`)                 | `open_router/arcee-ai/trinity-large-preview:free` |
-| `MODEL_HAIKU`                     | Model for Claude Haiku requests (optional, falls back to `MODEL`)                  | `open_router/stepfun/step-3.5-flash:free`         |
+| `MODEL`                           | Fallback model (prefix format: `provider/model/name`; invalid prefix causes error) | `nvidia_nim/meta/llama-3.3-70b-instruct`            |
+| `MODEL_OPUS`                      | Model for Claude Opus requests (optional, falls back to `MODEL`)                   | `nvidia_nim/z-ai/glm-5.1`                          |
+| `MODEL_SONNET`                    | Model for Claude Sonnet requests (optional, falls back to `MODEL`)                 | `nvidia_nim/meta/llama-3.3-70b-instruct` |
+| `MODEL_HAIKU`                     | Model for Claude Haiku requests (optional, falls back to `MODEL`)                  | `nvidia_nim/meta/llama-3.2-3b-instruct`         |
 | `NVIDIA_NIM_API_KEY`              | NVIDIA API key (NIM provider)                                                      | required                                          |
 | `OPENROUTER_API_KEY`              | OpenRouter API key (OpenRouter provider)                                           | required                                          |
 | `LM_STUDIO_BASE_URL`              | LM Studio server URL                                                               | `http://localhost:1234/v1`                        |

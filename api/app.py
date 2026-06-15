@@ -150,9 +150,6 @@ async def lifespan(app: FastAPI):
     app.state.message_handler = message_handler
     app.state.cli_manager = cli_manager
 
-    # Instrumentator for Prometheus metrics
-    Instrumentator().instrument(app).expose(app)
-
     yield
 
     # Cleanup
@@ -191,6 +188,9 @@ def create_app() -> FastAPI:
         version="2.0.0",
         lifespan=lifespan,
     )
+
+    # Register middleware and metrics routes before the application starts.
+    Instrumentator().instrument(app).expose(app)
 
     # Register routes
     app.include_router(router)

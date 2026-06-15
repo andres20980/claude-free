@@ -12,64 +12,174 @@ _MODEL_OVERRIDE_RE = re.compile(
 
 _DEEP_KEYWORDS = frozenset(
     {
+        # Spanish
         "arquitectura",
+        "concurrencia",
+        "deadlock",
+        "difícil",
+        "dificil",
+        "fallo",
+        "incidente",
+        "migración",
+        "migracion",
+        "regresión",
+        "regresion",
+        "revisión",
+        "revision",
+        "seguridad",
+        "vulnerabilidad",
+        "optimizar",
+        "optimización",
+        "optimizacion",
+        "complejo",
+        "complejidad",
+        "análisis",
+        "analisis",
+        "auditoría",
+        "auditoria",
+        "cuello de botella",
+        "fuga de memoria",
+        "cifrado",
+        "algoritmo",
+        "diseño",
+        "diseno",
+        # English
         "architecture",
         "auditor",
-        "concurrencia",
         "concurrency",
-        "deadlock",
         "deep_review",
         "debug",
         "debugging",
-        "difícil",
-        "dificil",
         "error",
         "failing",
-        "fallo",
         "fails",
         "flaky",
-        "incidente",
         "migration",
-        "migración",
-        "migracion",
         "perf",
         "performance",
         "race",
         "refactor",
-        "regresión",
-        "regresion",
         "review",
-        "revisión",
-        "revision",
         "security",
-        "seguridad",
-        "vulnerabilidad",
+        "optimize",
+        "optimization",
+        "complex",
+        "complexity",
+        "analysis",
+        "audit",
+        "bottleneck",
+        "memory leak",
+        "leak",
+        "encryption",
+        "cryptography",
+        "algorithm",
+        "design",
+        "refactoring",
+        "thread",
+        "multithreading",
+        "async",
+        "asynchronous",
+        "race condition",
+        "lock",
+        "mutex",
     }
 )
 
 _CODE_KEYWORDS = frozenset(
     {
-        "api",
-        "bug",
+        # Spanish
         "código",
         "codigo",
-        "code",
-        "commit",
-        "diff",
         "editar",
-        "extension",
-        "fix",
         "función",
         "funcion",
         "implementar",
+        "prueba",
+        "programa",
+        "programación",
+        "programacion",
+        "clase",
+        "método",
+        "metodo",
+        "variable",
+        "importar",
+        "librería",
+        "libreria",
+        "biblioteca",
+        "módulo",
+        "modulo",
+        "archivo",
+        "fichero",
+        "línea",
+        "linea",
+        "compilar",
+        "ejecutar",
+        "consola",
+        "terminal",
+        "desplegar",
+        "repositorio",
+        "rama",
+        "base de datos",
+        "consulta",
+        "servidor",
+        "cliente",
+        "interfaz",
+        "componente",
+        # English
+        "api",
+        "bug",
+        "code",
+        "commit",
+        "diff",
+        "extension",
+        "fix",
         "implement",
         "patch",
-        "prueba",
         "pytest",
         "script",
         "test",
         "vscode",
         "wsl",
+        "program",
+        "programming",
+        "class",
+        "method",
+        "import",
+        "library",
+        "module",
+        "file",
+        "line",
+        "compile",
+        "run",
+        "deploy",
+        "deployment",
+        "git",
+        "repo",
+        "repository",
+        "branch",
+        "merge",
+        "pr",
+        "pull request",
+        "database",
+        "db",
+        "query",
+        "server",
+        "client",
+        "interface",
+        "ui",
+        "component",
+        "endpoint",
+        "json",
+        "yaml",
+        "xml",
+        "html",
+        "css",
+        "js",
+        "ts",
+        "python",
+        "rust",
+        "go",
+        "cpp",
     }
 )
 
@@ -111,24 +221,55 @@ def strip_model_override(text: str) -> str:
     return _MODEL_OVERRIDE_RE.sub("", text).strip()
 
 
-def extract_text_from_messages(messages: list[Any] | None) -> str:
-    """Extract concatenated text from user messages without provider dependencies."""
-    if not messages:
-        return ""
-
+def extract_text_from_messages(
+    messages: list[Any] | None,
+    system_prompt: str | list[Any] | None = None,
+) -> str:
+    """Extract concatenated text from messages and system prompt without provider dependencies."""
     parts: list[str] = []
-    for message in messages:
-        if getattr(message, "role", None) != "user":
-            continue
-        content = getattr(message, "content", "")
-        if isinstance(content, str):
-            parts.append(content)
-            continue
-        if isinstance(content, list):
-            for block in content:
+
+    # Process system prompt first
+    if system_prompt:
+        if isinstance(system_prompt, str):
+            parts.append(system_prompt)
+        elif isinstance(system_prompt, list):
+            for block in system_prompt:
                 text = getattr(block, "text", "")
                 if isinstance(text, str) and text:
                     parts.append(text)
+                elif isinstance(block, dict) and "text" in block:
+                    parts.append(block["text"])
+
+    if messages:
+        for message in messages:
+            role = getattr(message, "role", None)
+            if role not in ("user", "assistant", "system"):
+                continue
+            content = getattr(message, "content", "")
+            if isinstance(content, str):
+                parts.append(content)
+                continue
+            if isinstance(content, list):
+                for block in content:
+                    text = getattr(block, "text", "")
+                    if isinstance(text, str) and text:
+                        parts.append(text)
+                    elif isinstance(block, dict) and "text" in block:
+                        parts.append(block["text"])
+                    elif role == "user" and getattr(block, "type", "") == "tool_result":
+                        tool_content = getattr(block, "content", "")
+                        if isinstance(tool_content, str):
+                            parts.append(tool_content)
+                        elif isinstance(tool_content, list):
+                            for sub_block in tool_content:
+                                text_val = getattr(sub_block, "text", "")
+                                if isinstance(text_val, str) and text_val:
+                                    parts.append(text_val)
+                                elif (
+                                    isinstance(sub_block, dict) and "text" in sub_block
+                                ):
+                                    parts.append(sub_block["text"])
+
     return "\n".join(parts)
 
 
@@ -136,6 +277,7 @@ def route_model_tier(
     *,
     requested_model: str,
     messages: list[Any] | None,
+    system_prompt: str | list[Any] | None = None,
     tool_count: int,
     auto_default: ModelTier,
     allow_opus: bool,
@@ -146,7 +288,7 @@ def route_model_tier(
     names keep their tier unless the request looks simple enough for Haiku or
     complex enough for Opus.
     """
-    text = extract_text_from_messages(messages)
+    text = extract_text_from_messages(messages, system_prompt)
     override = find_model_override(text)
     if override is not None:
         if override == "opus" and not allow_opus:

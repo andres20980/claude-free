@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
-from typing import cast
+from typing import Any, cast
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -308,6 +308,7 @@ class Settings(BaseSettings):
         claude_model_name: str,
         *,
         messages: list[object] | None = None,
+        system_prompt: Any = None,
         tool_count: int = 0,
     ) -> tuple[str, ModelRoutingDecision | None]:
         """Resolve a request to provider/model, optionally using auto routing."""
@@ -317,6 +318,7 @@ class Settings(BaseSettings):
         decision = route_model_tier(
             requested_model=claude_model_name,
             messages=messages,
+            system_prompt=system_prompt,
             tool_count=tool_count,
             auto_default=self.auto_model_default,
             allow_opus=self.auto_model_allow_opus,
@@ -328,6 +330,7 @@ class Settings(BaseSettings):
         claude_model_name: str,
         *,
         messages: list[object] | None = None,
+        system_prompt: Any = None,
         tool_count: int = 0,
     ) -> tuple[list[str], ModelRoutingDecision | None]:
         """Resolve a request to ordered provider/model candidates."""
@@ -341,6 +344,7 @@ class Settings(BaseSettings):
         decision = route_model_tier(
             requested_model=claude_model_name,
             messages=messages,
+            system_prompt=system_prompt,
             tool_count=tool_count,
             auto_default=self.auto_model_default,
             allow_opus=self.auto_model_allow_opus,

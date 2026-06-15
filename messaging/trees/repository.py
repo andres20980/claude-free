@@ -90,7 +90,7 @@ class TreeRepository:
             return msg_id
 
         # Otherwise, it might be a status message - find the owning node
-        node = tree.findNode_by_status_message(msg_id)
+        node = tree.find_node_by_status_message(msg_id)
         if node:
             return node.node_id
 

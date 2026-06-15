@@ -27,6 +27,19 @@ class TestGetDiscord:
             _get_discord()
 
 
+class TestDiscordPlatformAvailability:
+    """Tests for DiscordPlatform dependency availability handling."""
+
+    def test_init_raises_when_discord_not_available(self):
+        import messaging.platforms.discord as discord_mod
+
+        with (
+            patch.object(discord_mod, "DISCORD_AVAILABLE", False),
+            pytest.raises(ImportError, match=r"discord\.py is required"),
+        ):
+            DiscordPlatform(bot_token="token")
+
+
 class TestParseAllowedChannels:
     """Tests for _parse_allowed_channels helper."""
 

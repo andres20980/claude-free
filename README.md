@@ -38,7 +38,7 @@ Edita `.env` y elige **una** de estas opciones:
 **Option A: NVIDIA NIM** (recomendado, 40 req/min gratis)
 ```dotenv
 NVIDIA_NIM_API_KEY="nvapi-tu-clave-aquí"
-MODEL="nvidia_nim/z-ai/glm4.7"
+MODEL="nvidia_nim/meta/llama-3.3-70b-instruct"
 ```
 
 **Option B: OpenRouter** (cientos de modelos)
@@ -111,10 +111,10 @@ Para usar la extensión de Claude Code en VSCode:
 NVIDIA_NIM_API_KEY="nvapi-tu-clave-aquí"
 OPENROUTER_API_KEY="sk-or-tu-clave-aquí"
 
-MODEL_OPUS="nvidia_nim/z-ai/glm4.7"
-MODEL_SONNET="open_router/deepseek/deepseek-r1-0528:free"
-MODEL_HAIKU="nvidia_nim/stepfun-ai/step-3.5-flash"
-MODEL="nvidia_nim/z-ai/glm4.7"  # fallback
+MODEL_OPUS="nvidia_nim/z-ai/glm-5.1"
+MODEL_SONNET="nvidia_nim/meta/llama-3.3-70b-instruct"
+MODEL_HAIKU="nvidia_nim/meta/llama-3.2-3b-instruct"
+MODEL="nvidia_nim/meta/llama-3.3-70b-instruct"  # fallback
 ```
 
 #### Selector de modelos con `claude-pick`
@@ -346,10 +346,10 @@ Explora: [model.lmstudio.ai](https://model.lmstudio.ai)
 
 | Variable                          | Descripción                                                                        | Valor por defecto                                           |
 | --------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `MODEL`                           | Modelo de fallback (formato de prefijo: `provider/model/nombre`; prefijo inválido causa error) | `nvidia_nim/stepfun-ai/step-3.5-flash`            |
-| `MODEL_OPUS`                      | Modelo para peticiones de Claude Opus (opcional, recurre a `MODEL`)                | `nvidia_nim/z-ai/glm4.7`                          |
-| `MODEL_SONNET`                    | Modelo para peticiones de Claude Sonnet (opcional, recurre a `MODEL`)              | `open_router/arcee-ai/trinity-large-preview:free` |
-| `MODEL_HAIKU`                     | Modelo para peticiones de Claude Haiku (opcional, recurre a `MODEL`)               | `open_router/stepfun/step-3.5-flash:free`         |
+| `MODEL`                           | Modelo de fallback (formato de prefijo: `provider/model/nombre`; prefijo inválido causa error) | `nvidia_nim/meta/llama-3.3-70b-instruct`            |
+| `MODEL_OPUS`                      | Modelo para peticiones de Claude Opus (opcional, recurre a `MODEL`)                | `nvidia_nim/z-ai/glm-5.1`                          |
+| `MODEL_SONNET`                    | Modelo para peticiones de Claude Sonnet (opcional, recurre a `MODEL`)              | `nvidia_nim/meta/llama-3.3-70b-instruct` |
+| `MODEL_HAIKU`                     | Modelo para peticiones de Claude Haiku (opcional, recurre a `MODEL`)               | `nvidia_nim/meta/llama-3.2-3b-instruct`         |
 | `NVIDIA_NIM_API_KEY`              | Clave de API de NVIDIA (proveedor NIM)                                             | requerida                                         |
 | `OPENROUTER_API_KEY`              | Clave de API de OpenRouter (proveedor OpenRouter)                                  | requerida                                         |
 | `LM_STUDIO_BASE_URL`              | URL del servidor de LM Studio                                                      | `http://localhost:1234/v1`                        |

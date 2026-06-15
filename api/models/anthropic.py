@@ -6,7 +6,7 @@ from enum import StrEnum
 from typing import Any, Literal
 
 from loguru import logger
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, model_validator
 
 from config.model_router import strip_model_override
 from config.settings import Settings, get_settings
@@ -130,6 +130,7 @@ class MessagesRequest(BaseModel):
         candidates, routing = settings.resolve_request_model_candidates(
             self.original_model,
             messages=list(self.messages),
+            system_prompt=self.system,
             tool_count=len(self.tools) if self.tools else 0,
         )
         resolved_full = candidates[0]
@@ -170,10 +171,15 @@ class TokenCountRequest(BaseModel):
     thinking: ThinkingConfig | None = None
     tool_choice: dict[str, Any] | None = None
 
-    @field_validator("model")
-    @classmethod
-    def validate_model_field(cls, v: str, info) -> str:
+    @model_validator(mode="after")
+    def map_model(self) -> TokenCountRequest:
         """Map any Claude model name to the configured model (model-aware)."""
         settings = get_settings()
-        resolved_full, _ = settings.resolve_request_model(v)
-        return Settings.parse_model_name(resolved_full)
+        resolved_full, _ = settings.resolve_request_model(
+            self.model,
+            messages=list(self.messages) if self.messages else None,
+            system_prompt=self.system,
+            tool_count=len(self.tools) if self.tools else 0,
+        )
+        self.model = Settings.parse_model_name(resolved_full)
+        return self

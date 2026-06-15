@@ -279,3 +279,49 @@ def test_auto_model_opus_override_respects_allow_opus_false():
         assert request.model == "coding-model"
         assert request.auto_model_tier == "sonnet"
         assert request.auto_model_reason == "manual_opus_disabled"
+
+
+def test_auto_model_routes_system_prompt_deep_signal_to_opus():
+    """Deep signal in system prompt routes to MODEL_OPUS."""
+    settings = Settings()
+    settings.model = "nvidia_nim/fallback-model"
+    settings.model_haiku = "nvidia_nim/fast-model"
+    settings.model_sonnet = "nvidia_nim/coding-model"
+    settings.model_opus = "nvidia_nim/deep-model"
+    settings.auto_model_enabled = True
+
+    with patch("api.models.anthropic.get_settings", return_value=settings):
+        request = MessagesRequest(
+            model="claude-3-7-sonnet-latest",
+            max_tokens=100,
+            system="Analyze the architecture and check for race conditions.",
+            messages=[Message(role="user", content="hello")],
+        )
+        assert request.model == "deep-model"
+        assert request.auto_model_tier == "opus"
+        assert request.auto_model_reason == "deep_signal"
+
+
+def test_auto_model_routes_spanish_deep_signal_to_opus():
+    """Spanish deep signal keyword routes to MODEL_OPUS."""
+    settings = Settings()
+    settings.model = "nvidia_nim/fallback-model"
+    settings.model_haiku = "nvidia_nim/fast-model"
+    settings.model_sonnet = "nvidia_nim/coding-model"
+    settings.model_opus = "nvidia_nim/deep-model"
+    settings.auto_model_enabled = True
+
+    with patch("api.models.anthropic.get_settings", return_value=settings):
+        request = MessagesRequest(
+            model="claude-3-7-sonnet-latest",
+            max_tokens=100,
+            messages=[
+                Message(
+                    role="user",
+                    content="Optimizar esta consulta de base de datos compleja",
+                )
+            ],
+        )
+        assert request.model == "deep-model"
+        assert request.auto_model_tier == "opus"
+        assert request.auto_model_reason == "deep_signal"

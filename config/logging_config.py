@@ -42,6 +42,9 @@ class InterceptHandler(logging.Handler):
     """Redirect stdlib logging to loguru."""
 
     def emit(self, record: logging.LogRecord) -> None:
+        if getattr(record, "_from_loguru_caplog", False):
+            return
+
         try:
             level = logger.level(record.levelname).name
         except ValueError:

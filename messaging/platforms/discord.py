@@ -76,7 +76,25 @@ if DISCORD_AVAILABLE and _discord is not None:
             await self._platform._handle_client_message(message)
 
 else:
-    _DiscordClient = None  # type: ignore[assignment,misc]
+
+    def _create_discord_client(
+        platform: DiscordPlatform,
+        intents: Any,
+    ) -> Any:
+        """Raise a clear error when discord.py is unavailable."""
+        raise ImportError(
+            "discord.py is required. Install with: pip install discord.py"
+        )
+
+
+if DISCORD_AVAILABLE and _discord is not None:
+
+    def _create_discord_client(
+        platform: DiscordPlatform,
+        intents: Any,
+    ) -> Any:
+        """Create the internal Discord client."""
+        return _DiscordClient(platform, intents)
 
 
 class DiscordPlatform(MessagingPlatform):
@@ -110,9 +128,7 @@ class DiscordPlatform(MessagingPlatform):
         intents = discord.Intents.default()
         intents.message_content = True
 
-        if _DiscordClient is None:
-            raise ImportError("discord.py is required but failed to load")
-        self._client = _DiscordClient(self, intents)
+        self._client = _create_discord_client(self, intents)
         self._message_handler: Callable[[IncomingMessage], Awaitable[None]] | None = (
             None
         )

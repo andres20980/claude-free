@@ -169,7 +169,11 @@ def _propagate_loguru_to_caplog():
             level = record["level"].no
             stdlib_level = min(level, logging.CRITICAL)
             py_logger = logging.getLogger(record["name"])
-            py_logger.log(stdlib_level, record["message"])
+            py_logger.log(
+                stdlib_level,
+                record["message"],
+                extra={"_from_loguru_caplog": True},
+            )
 
     handler_id = loguru_logger.add(_PropagateHandler(), format="{message}")
     yield

@@ -52,9 +52,9 @@ The proxy is intended to run with `AUTO_MODEL_ENABLED=true`.
 
 ## Current NVIDIA NIM mapping
 
-- `MODEL_HAIKU`: `nvidia_nim/openai/gpt-oss-20b`
-- `MODEL_SONNET`: `nvidia_nim/qwen/qwen3-next-80b-a3b-instruct`
-- `MODEL_OPUS`: `nvidia_nim/nvidia/nemotron-3-super-120b-a12b`
+- `MODEL_HAIKU`: `nvidia_nim/meta/llama-3.2-3b-instruct`
+- `MODEL_SONNET`: `nvidia_nim/meta/llama-3.3-70b-instruct`
+- `MODEL_OPUS`: `nvidia_nim/z-ai/glm-5.1`
 
 ## Operational notes
 
