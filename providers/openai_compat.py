@@ -62,7 +62,7 @@ class OpenAICompatibleProvider(BaseProvider):
         """Release HTTP client resources."""
         client = getattr(self, "_client", None)
         if client is not None:
-            await client.aclose()
+            await client.close()
 
     @abstractmethod
     def _build_request_body(self, request: Any) -> dict:
@@ -106,12 +106,23 @@ class OpenAICompatibleProvider(BaseProvider):
                     yield sse.emit_tool_delta(tc_index, json.dumps(parsed))
                 return
 
+            if "Edit" in current_name:
+                if state:
+                    state.contents.append(args)
+                return
+
             yield sse.emit_tool_delta(tc_index, args)
 
     def _flush_task_arg_buffers(self, sse: SSEBuilder) -> Iterator[str]:
-        """Emit buffered Task args as a single JSON delta (best-effort)."""
+        """Emit buffered Task and Edit/MultiEdit args as single JSON deltas."""
         for tool_index, out in sse.blocks.flush_task_arg_buffers():
             yield sse.emit_tool_delta(tool_index, out)
+
+        for tool_index, state in list(sse.blocks.tool_states.items()):
+            if state.started and "Edit" in state.name and not state.task_args_emitted:
+                full_args = "".join(state.contents)
+                yield sse.emit_tool_delta(tool_index, full_args)
+                state.task_args_emitted = True
 
     async def stream_response(
         self,
@@ -136,7 +147,12 @@ class OpenAICompatibleProvider(BaseProvider):
         """Shared streaming implementation."""
         tag = self._provider_name
         message_id = f"msg_{uuid.uuid4()}"
-        sse = SSEBuilder(message_id, request.model, input_tokens)
+        sse = SSEBuilder(
+            message_id,
+            request.model,
+            input_tokens,
+            tier=getattr(request, "auto_model_tier", None),
+        )
 
         body = self._build_request_body(request)
         req_tag = f" request_id={request_id}" if request_id else ""
@@ -332,3 +348,12 @@ class OpenAICompatibleProvider(BaseProvider):
                 )
         yield sse.message_delta(map_stop_reason(finish_reason), output_tokens)
         yield sse.message_stop()
+
+
+class GenericOpenAICompatibleProvider(OpenAICompatibleProvider):
+    """Generic concrete implementation of OpenAICompatibleProvider using default converters."""
+
+    def _build_request_body(self, request: Any) -> dict:
+        from providers.common.message_converter import build_base_request_body
+
+        return build_base_request_body(request)

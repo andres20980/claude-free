@@ -431,6 +431,40 @@ class TestProcessToolCall:
         event_text = "".join(events)
         assert "input_json_delta" in event_text
 
+    def test_edit_and_multiedit_tools_are_buffered(self):
+        """Edit and MultiEdit tool call arguments are buffered and emitted on flush."""
+        provider = _make_provider()
+        from providers.common import SSEBuilder
+
+        sse = SSEBuilder("msg_test", "test-model")
+        tc1 = {
+            "index": 0,
+            "id": "call_edit_1",
+            "function": {
+                "name": "MultiEdit",
+                "arguments": '{"file_path": "test.txt", ',
+            },
+        }
+        tc2 = {
+            "index": 0,
+            "id": "call_edit_1",
+            "function": {"name": None, "arguments": '"edits": []}'},
+        }
+
+        # _process_tool_call should not emit any arguments delta immediately
+        events1 = list(provider._process_tool_call(tc1, sse))
+        assert "input_json_delta" not in "".join(events1)
+
+        events2 = list(provider._process_tool_call(tc2, sse))
+        assert "input_json_delta" not in "".join(events2)
+
+        # _flush_task_arg_buffers should emit the joined arguments
+        flushed = list(provider._flush_task_arg_buffers(sse))
+        flushed_text = "".join(flushed)
+        assert "input_json_delta" in flushed_text
+        assert "test.txt" in flushed_text
+        assert "edits" in flushed_text
+
 
 class TestStreamChunkEdgeCases:
     """Tests for edge cases in stream chunk handling."""

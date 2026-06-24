@@ -7,6 +7,7 @@ from api.optimization_handlers import (
     try_filepath_mock,
     try_models_mock,
     try_optimizations,
+    try_ping_mock,
     try_prefix_detection,
     try_quota_mock,
     try_suggestion_skip,
@@ -264,3 +265,28 @@ class TestTryModelsMock:
             return_value=False,
         ):
             assert try_models_mock(req, settings) is None
+
+
+class TestTryPingMock:
+    def test_ping_match_returns_response(self):
+        settings = Settings()
+        req = _make_request("ping")
+        with patch(
+            "api.optimization_handlers.is_ping_request",
+            return_value=True,
+        ):
+            result = try_ping_mock(req, settings)
+        assert result is not None
+        block = result.content[0]
+        assert isinstance(block, ContentBlockText)
+        assert block.text == "pong"
+
+    def test_no_ping_match_returns_none(self):
+        settings = Settings()
+        req = _make_request("hello")
+        with patch(
+            "api.optimization_handlers.is_ping_request",
+            return_value=False,
+        ):
+            result = try_ping_mock(req, settings)
+        assert result is None

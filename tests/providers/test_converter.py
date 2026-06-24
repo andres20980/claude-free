@@ -412,3 +412,80 @@ def test_convert_multiple_tool_results():
     assert len(result) == 2
     assert result[0]["tool_call_id"] == "t1"
     assert result[1]["tool_call_id"] == "t2"
+
+
+class TestHaikuOptimizations:
+    def test_prune_system_prompt_for_haiku(self):
+        """Should remove <example>...</example> blocks and excessive newlines."""
+        from providers.common.message_converter import prune_system_prompt_for_haiku
+
+        system_content = (
+            "Instructions here.\n"
+            "<example>\n"
+            "user: 2 + 2\n"
+            "assistant: 4\n"
+            "</example>\n"
+            "More instructions.\n\n\n"
+            "<EXAMPLE>\n"
+            "Another example\n"
+            "</EXAMPLE>"
+        )
+        pruned = prune_system_prompt_for_haiku(system_content)
+        assert "Instructions here." in pruned
+        assert "More instructions." in pruned
+        assert "2 + 2" not in pruned
+        assert "Another example" not in pruned
+
+    def test_build_base_request_body_with_haiku_tier(self):
+        """Should strip tools and prune system prompt when auto_model_tier is 'haiku'."""
+        from providers.common.message_converter import build_base_request_body
+
+        class MockRequest:
+            def __init__(self):
+                self.model = "test-model"
+                self.messages = [MockMessage("user", "Hello")]
+                self.system = (
+                    "System prompt.\n<example>\nUser: hi\nAssistant: hello\n</example>"
+                )
+                self.tools = [MockTool("test_tool", "desc", {})]
+                self.tool_choice = "auto"
+                self.auto_model_tier = "haiku"
+
+        req = MockRequest()
+        body = build_base_request_body(req)
+
+        # Check system prompt is pruned
+        assert body["messages"][0]["role"] == "system"
+        assert "System prompt." in body["messages"][0]["content"]
+        assert "User: hi" not in body["messages"][0]["content"]
+
+        # Check tools are stripped
+        assert "tools" not in body
+        assert "tool_choice" not in body
+
+    def test_build_base_request_body_with_non_haiku_tier(self):
+        """Should NOT strip tools or prune system prompt when auto_model_tier is not 'haiku'."""
+        from providers.common.message_converter import build_base_request_body
+
+        class MockRequest:
+            def __init__(self):
+                self.model = "test-model"
+                self.messages = [MockMessage("user", "Hello")]
+                self.system = (
+                    "System prompt.\n<example>\nUser: hi\nAssistant: hello\n</example>"
+                )
+                self.tools = [MockTool("test_tool", "desc", {})]
+                self.tool_choice = "auto"
+                self.auto_model_tier = "sonnet"
+
+        req = MockRequest()
+        body = build_base_request_body(req)
+
+        # Check system prompt is NOT pruned
+        assert body["messages"][0]["role"] == "system"
+        assert "User: hi" in body["messages"][0]["content"]
+
+        # Check tools are preserved
+        assert "tools" in body
+        assert len(body["tools"]) == 1
+        assert body["tool_choice"] == "auto"

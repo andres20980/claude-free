@@ -9,6 +9,7 @@ from .exceptions import (
     ProviderError,
     RateLimitError,
 )
+from .google_ai_studio import GoogleAIStudioProvider
 from .lmstudio import LMStudioProvider
 from .nvidia_nim import NvidiaNimProvider
 from .open_router import OpenRouterProvider
@@ -17,6 +18,7 @@ __all__ = [
     "APIError",
     "AuthenticationError",
     "BaseProvider",
+    "GoogleAIStudioProvider",
     "InvalidRequestError",
     "LMStudioProvider",
     "NvidiaNimProvider",

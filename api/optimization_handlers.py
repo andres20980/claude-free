@@ -14,6 +14,7 @@ from .command_utils import extract_command_prefix, extract_filepaths_from_comman
 from .detection import (
     is_filepath_extraction_request,
     is_models_request,
+    is_ping_request,
     is_prefix_detection_request,
     is_quota_check_request,
     is_suggestion_mode_request,
@@ -150,6 +151,24 @@ def try_models_mock(
     )
 
 
+def try_ping_mock(
+    request_data: MessagesRequest, settings: Settings
+) -> MessagesResponse | None:
+    """Mock ping requests."""
+    if not is_ping_request(request_data):
+        return None
+
+    logger.info("Optimization: Mocked ping request")
+    return MessagesResponse(
+        id=f"msg_{uuid.uuid4()}",
+        model=request_data.model,
+        role="assistant",
+        content=[{"type": "text", "text": "pong"}],
+        stop_reason="end_turn",
+        usage=Usage(input_tokens=10, output_tokens=5),
+    )
+
+
 # Cheapest/most common optimizations first for faster short-circuit.
 OPTIMIZATION_HANDLERS = [
     try_quota_mock,
@@ -158,6 +177,7 @@ OPTIMIZATION_HANDLERS = [
     try_suggestion_skip,
     try_filepath_mock,
     try_models_mock,
+    try_ping_mock,
 ]
 
 

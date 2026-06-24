@@ -5,10 +5,11 @@ from unittest.mock import patch
 from api.detection import (
     is_filepath_extraction_request,
     is_models_request,
+    is_ping_request,
     is_prefix_detection_request,
     is_title_generation_request,
 )
-from api.models.anthropic import Message, MessagesRequest
+from api.models.anthropic import ContentBlockText, Message, MessagesRequest
 
 
 class TestIsTitleGenerationRequest:
@@ -194,3 +195,36 @@ class TestIsModelsRequest:
         # No messages
         req = MessagesRequest(model="claude-3-sonnet", max_tokens=100, messages=[])
         assert is_models_request(req) is False
+
+
+class TestIsPingRequest:
+    def test_simple_ping(self):
+        """Should detect a simple user message that is 'ping'."""
+        req = _make_request("ping")
+        assert is_ping_request(req) is True
+
+    def test_simple_ping_uppercase(self):
+        """Should detect a simple user message that is 'PING'."""
+        req = _make_request(" PING   ")
+        assert is_ping_request(req) is True
+
+    def test_ping_with_system_reminder(self):
+        """Should detect ping even when wrapped in a <system-reminder> block."""
+        content = [
+            ContentBlockText(
+                type="text",
+                text="<system-reminder>\nsome guidelines\n</system-reminder>",
+            ),
+            ContentBlockText(type="text", text="ping"),
+        ]
+        req = MessagesRequest(
+            model="claude-3-sonnet",
+            max_tokens=100,
+            messages=[Message(role="user", content=content)],
+        )
+        assert is_ping_request(req) is True
+
+    def test_non_ping_request(self):
+        """Should return False if user text is not ping."""
+        req = _make_request("ping pong")
+        assert is_ping_request(req) is False

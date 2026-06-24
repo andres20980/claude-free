@@ -124,6 +124,24 @@ class MessagesRequest(BaseModel):
     def map_model(self) -> MessagesRequest:
         """Map any Claude model name to the configured model (model-aware)."""
         settings = get_settings()
+        if settings.inject_ponytail:
+            from config.ponytail import get_ponytail_instruction
+
+            instruction = get_ponytail_instruction(settings.ponytail_level)
+            if self.system is None:
+                self.system = instruction
+            elif isinstance(self.system, str):
+                if instruction not in self.system:
+                    self.system = f"{instruction}\n\n{self.system}"
+            elif isinstance(self.system, list):
+                already_injected = False
+                for block in self.system:
+                    if block.type == "text" and instruction in block.text:
+                        already_injected = True
+                        break
+                if not already_injected:
+                    self.system.insert(0, SystemContent(type="text", text=instruction))
+
         if self.original_model is None:
             self.original_model = self.model
 

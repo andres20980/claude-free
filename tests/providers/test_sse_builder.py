@@ -380,3 +380,15 @@ class TestSSEBuilderTokenEstimation:
             tokens = builder.estimate_output_tokens()
             # 1 tool * 50 = 50
             assert tokens == 50
+
+    def test_metadata_contains_elapsed_time(self):
+        builder = SSEBuilder("msg_1", "model", input_tokens=123)
+        builder.start_text_block()
+        sse = builder.emit_text_delta("hello")
+        data = _parse_sse(sse)
+        text = data["delta"]["text"]
+        assert "Model:" in text
+        assert "2" in text
+        assert "123" in text
+        assert "tokens" in text
+        assert "0.0s" in text

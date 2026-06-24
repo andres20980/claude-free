@@ -325,3 +325,65 @@ def test_auto_model_routes_spanish_deep_signal_to_opus():
         assert request.model == "deep-model"
         assert request.auto_model_tier == "opus"
         assert request.auto_model_reason == "deep_signal"
+
+
+def test_ponytail_injection_disabled(mock_settings):
+    mock_settings.inject_ponytail = False
+    with patch("api.models.anthropic.get_settings", return_value=mock_settings):
+        request = MessagesRequest(
+            model="claude-3-opus",
+            max_tokens=100,
+            messages=[Message(role="user", content="hello")],
+            system="my existing prompt",
+        )
+        assert request.system == "my existing prompt"
+
+
+def test_ponytail_injection_string_system(mock_settings):
+    mock_settings.inject_ponytail = True
+    mock_settings.ponytail_level = "lite"
+    with patch("api.models.anthropic.get_settings", return_value=mock_settings):
+        request = MessagesRequest(
+            model="claude-3-opus",
+            max_tokens=100,
+            messages=[Message(role="user", content="hello")],
+            system="my existing prompt",
+        )
+        from config.ponytail import PONYTAIL_LITE
+
+        assert request.system == f"{PONYTAIL_LITE}\n\nmy existing prompt"
+
+
+def test_ponytail_injection_none_system(mock_settings):
+    mock_settings.inject_ponytail = True
+    mock_settings.ponytail_level = "full"
+    with patch("api.models.anthropic.get_settings", return_value=mock_settings):
+        request = MessagesRequest(
+            model="claude-3-opus",
+            max_tokens=100,
+            messages=[Message(role="user", content="hello")],
+            system=None,
+        )
+        from config.ponytail import PONYTAIL_FULL
+
+        assert request.system == PONYTAIL_FULL
+
+
+def test_ponytail_injection_list_system(mock_settings):
+    from api.models.anthropic import SystemContent
+
+    mock_settings.inject_ponytail = True
+    mock_settings.ponytail_level = "ultra"
+    with patch("api.models.anthropic.get_settings", return_value=mock_settings):
+        request = MessagesRequest(
+            model="claude-3-opus",
+            max_tokens=100,
+            messages=[Message(role="user", content="hello")],
+            system=[SystemContent(type="text", text="my existing prompt")],
+        )
+        from config.ponytail import PONYTAIL_ULTRA
+
+        assert isinstance(request.system, list)
+        assert len(request.system) == 2
+        assert request.system[0].text == PONYTAIL_ULTRA
+        assert request.system[1].text == "my existing prompt"

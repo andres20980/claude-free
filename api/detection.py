@@ -185,3 +185,18 @@ def is_models_request(request_data: MessagesRequest) -> bool:
     ]
 
     return any(indicator in content for indicator in model_indicators)
+
+
+def is_ping_request(request_data: MessagesRequest) -> bool:
+    """Check if this is a simple ping request."""
+    if not request_data.messages:
+        return False
+
+    from config.model_router import extract_current_query
+
+    query = (
+        extract_current_query(request_data.messages, request_data.system)
+        .strip()
+        .lower()
+    )
+    return query == "ping"

@@ -7,10 +7,32 @@ from functools import lru_cache
 from typing import Any, cast
 
 from pydantic import Field, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    DotEnvSettingsSource,
+    EnvSettingsSource,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from .model_router import ModelRoutingDecision, ModelTier, route_model_tier
 from .nim import NimSettings
+
+
+class CustomEnvSettingsSource(EnvSettingsSource):
+    def decode_complex_value(self, field_name: str, field: Any, value: str) -> Any:
+        try:
+            return super().decode_complex_value(field_name, field, value)
+        except Exception:
+            return value
+
+
+class CustomDotEnvSettingsSource(DotEnvSettingsSource):
+    def decode_complex_value(self, field_name: str, field: Any, value: str) -> Any:
+        try:
+            return super().decode_complex_value(field_name, field, value)
+        except Exception:
+            return value
 
 
 class Settings(BaseSettings):
@@ -33,6 +55,18 @@ class Settings(BaseSettings):
         default="http://localhost:1234/v1",
         validation_alias="LM_STUDIO_BASE_URL",
     )
+
+    # ==================== Google AI Studio Config ====================
+    google_ai_studio_api_key: str = Field(default="", validation_alias="GEMINI_API_KEY")
+
+    # ==================== Cerebras Config ====================
+    cerebras_api_key: str = Field(default="", validation_alias="CEREBRAS_API_KEY")
+
+    # ==================== Grok Config ====================
+    grok_api_key: str = Field(default="", validation_alias="GROK_API_KEY")
+
+    # ==================== Cohere Config ====================
+    cohere_api_key: str = Field(default="", validation_alias="COHERE_API_KEY")
 
     # ==================== Model ====================
     # All Claude model requests are mapped to this single model (fallback)
@@ -71,6 +105,13 @@ class Settings(BaseSettings):
         default=True, validation_alias="AUTO_MODEL_STRIP_OVERRIDE"
     )
     auto_model_debug: bool = Field(default=False, validation_alias="AUTO_MODEL_DEBUG")
+    auto_model_load_balance: bool = Field(
+        default=False, validation_alias="AUTO_MODEL_LOAD_BALANCE"
+    )
+
+    # ==================== Ponytail Config ====================
+    inject_ponytail: bool = Field(default=False, validation_alias="INJECT_PONYTAIL")
+    ponytail_level: str = Field(default="full", validation_alias="PONYTAIL_LEVEL")
 
     # ==================== Provider Rate Limiting ====================
     provider_rate_limit: int = Field(default=40, validation_alias="PROVIDER_RATE_LIMIT")
@@ -187,7 +228,15 @@ class Settings(BaseSettings):
 
     @staticmethod
     def _validate_model_format_value(v: str) -> str:
-        valid_providers = ("nvidia_nim", "open_router", "lmstudio")
+        valid_providers = (
+            "nvidia_nim",
+            "open_router",
+            "lmstudio",
+            "google_ai_studio",
+            "cohere",
+            "cerebras",
+            "grok",
+        )
         if "/" not in v:
             raise ValueError(
                 f"Model must be prefixed with provider type. "
@@ -198,9 +247,16 @@ class Settings(BaseSettings):
         if provider not in valid_providers:
             raise ValueError(
                 f"Invalid provider: '{provider}'. "
-                f"Supported: 'nvidia_nim', 'open_router', 'lmstudio'"
+                f"Supported: {', '.join(valid_providers)}"
             )
         return v
+
+    @field_validator("ponytail_level")
+    @classmethod
+    def validate_ponytail_level(cls, v: str) -> str:
+        if v.lower().strip() not in ("lite", "full", "ultra"):
+            raise ValueError("PONYTAIL_LEVEL must be 'lite', 'full', or 'ultra'")
+        return v.lower().strip()
 
     @field_validator("model", "model_opus", "model_sonnet", "model_haiku")
     @classmethod
@@ -294,10 +350,19 @@ class Settings(BaseSettings):
 
     def resolve_model_tier_candidates(self, tier: ModelTier) -> list[str]:
         """Resolve a tier to primary model plus configured fallback candidates."""
+        tier_models = [self.resolve_model_tier(tier), *self._fallbacks_for_tier(tier)]
+        tier_models = self._dedupe_models(tier_models)
+
+        if self.auto_model_load_balance:
+            import random
+
+            tier_models_shuffled = list(tier_models)
+            random.shuffle(tier_models_shuffled)
+            tier_models = tier_models_shuffled
+
         return self._dedupe_models(
             [
-                self.resolve_model_tier(tier),
-                *self._fallbacks_for_tier(tier),
+                *tier_models,
                 *self.model_fallbacks,
                 self.model,
             ]
@@ -360,6 +425,60 @@ class Settings(BaseSettings):
     def parse_model_name(model_string: str) -> str:
         """Extract model name from any 'provider/model' string."""
         return model_string.split("/", 1)[1]
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Wrap env and dotenv sources to fallback to raw strings if JSON decode fails.
+
+        This allows parsing comma-separated lists in environment variables for fields
+        annotated as list[str].
+        """
+        # Type narrowing for env_settings
+        if isinstance(env_settings, EnvSettingsSource):
+            case_sensitive = env_settings.case_sensitive
+            env_prefix = env_settings.env_prefix
+            env_nested_delimiter = env_settings.env_nested_delimiter
+        else:
+            case_sensitive = True
+            env_prefix = ""
+            env_nested_delimiter = None
+
+        # Type narrowing for dotenv_settings
+        if isinstance(dotenv_settings, DotEnvSettingsSource):
+            env_file = dotenv_settings.env_file
+            env_file_encoding = dotenv_settings.env_file_encoding
+            dot_case_sensitive = dotenv_settings.case_sensitive
+            dot_env_prefix = dotenv_settings.env_prefix
+            dot_env_nested_delimiter = dotenv_settings.env_nested_delimiter
+        else:
+            env_file = ".env"
+            env_file_encoding = "utf-8"
+            dot_case_sensitive = True
+            dot_env_prefix = ""
+            dot_env_nested_delimiter = None
+
+        custom_env = CustomEnvSettingsSource(
+            settings_cls,
+            case_sensitive=case_sensitive,
+            env_prefix=env_prefix,
+            env_nested_delimiter=env_nested_delimiter,
+        )
+        custom_dotenv = CustomDotEnvSettingsSource(
+            settings_cls,
+            env_file=env_file,
+            env_file_encoding=env_file_encoding,
+            case_sensitive=dot_case_sensitive,
+            env_prefix=dot_env_prefix,
+            env_nested_delimiter=dot_env_nested_delimiter,
+        )
+        return init_settings, custom_env, custom_dotenv, file_secret_settings
 
     model_config = SettingsConfigDict(
         env_file=".env",

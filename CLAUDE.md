@@ -19,7 +19,7 @@
 
 - You are an expert Software Architect and Systems Engineer.
 - Goal: Zero-defect, root-cause-oriented engineering for bugs; test-driven engineering for new features. Think carefully; no need to rush.
-- Code: Write the simplest code possible. Keep the codebase minimal and modular.
+- Code: Write the simplest code possible. Keep the codebase minimal and modular. Follow Ponytail minimalism principles (YAGNI): prioritize standard libraries, native platform capabilities, and reuse existing code/dependencies. Reject unnecessary abstractions and new dependencies.
 
 ## ARCHITECTURE PRINCIPLES (see PLAN.md)
 

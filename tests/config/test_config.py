@@ -456,3 +456,25 @@ class TestPerModelMapping:
 
         assert Settings.parse_model_name("nvidia_nim/meta/llama") == "meta/llama"
         assert Settings.parse_model_name("lmstudio/qwen") == "qwen"
+
+    def test_settings_load_balance_shuffles_candidates(self):
+        """test that auto_model_load_balance shuffles candidates of the same tier."""
+        from config.settings import Settings
+
+        s = Settings()
+        s.model = "nvidia_nim/fallback-model"
+        s.model_haiku = "nvidia_nim/haiku-1"
+        s.model_haiku_fallbacks = [
+            "nvidia_nim/haiku-2",
+            "nvidia_nim/haiku-3",
+            "nvidia_nim/haiku-4",
+        ]
+        s.auto_model_load_balance = True
+
+        orders = []
+        for _ in range(50):
+            candidates = s.resolve_model_tier_candidates("haiku")
+            tier_candidates = tuple(candidates[:4])
+            orders.append(tier_candidates)
+
+        assert len(set(orders)) > 1

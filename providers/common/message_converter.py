@@ -1,6 +1,7 @@
 """Message and tool format converters."""
 
 import json
+import re
 from typing import Any
 
 
@@ -184,6 +185,15 @@ class AnthropicToOpenAIConverter:
         return None
 
 
+def prune_system_prompt_for_haiku(system_content: str) -> str:
+    """Remove <example>...</example> blocks and other irrelevant tool instructions from the system prompt."""
+    # Remove all <example>...</example> blocks
+    pruned = re.sub(r"(?is)<example>.*?</example>", "", system_content)
+    # Remove any trailing / double newlines resulting from the regex substitution
+    pruned = re.sub(r"\n{3,}", "\n\n", pruned)
+    return pruned.strip()
+
+
 def build_base_request_body(
     request_data: Any,
     *,
@@ -203,10 +213,16 @@ def build_base_request_body(
         include_reasoning_for_openrouter=include_reasoning_for_openrouter,
     )
 
+    is_haiku = getattr(request_data, "auto_model_tier", None) == "haiku"
+
     system = getattr(request_data, "system", None)
     if system:
         system_msg = AnthropicToOpenAIConverter.convert_system_prompt(system)
         if system_msg:
+            if is_haiku:
+                system_msg["content"] = prune_system_prompt_for_haiku(
+                    system_msg["content"]
+                )
             messages.insert(0, system_msg)
 
     body: dict[str, Any] = {"model": request_data.model, "messages": messages}
@@ -220,11 +236,13 @@ def build_base_request_body(
     if stop_sequences:
         body["stop"] = stop_sequences
 
-    tools = getattr(request_data, "tools", None)
-    if tools:
-        body["tools"] = AnthropicToOpenAIConverter.convert_tools(tools)
-    tool_choice = getattr(request_data, "tool_choice", None)
-    if tool_choice:
-        body["tool_choice"] = tool_choice
+    # FinOps friendly: Omit tools & tool_choice on the Haiku tier to save tokens and avoid provider tool issues
+    if not is_haiku:
+        tools = getattr(request_data, "tools", None)
+        if tools:
+            body["tools"] = AnthropicToOpenAIConverter.convert_tools(tools)
+        tool_choice = getattr(request_data, "tool_choice", None)
+        if tool_choice:
+            body["tool_choice"] = tool_choice
 
     return body

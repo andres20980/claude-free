@@ -2,7 +2,7 @@
 
 import re
 from dataclasses import dataclass
-from typing import Any, Literal, cast
+from typing import Any, Literal, LiteralString, cast
 
 ModelTier = Literal["haiku", "sonnet", "opus"]
 
@@ -182,16 +182,25 @@ _CODE_KEYWORDS = frozenset(
         "cpp",
     }
 )
-
 _DEEP_REGEX = re.compile(
     r"\b("
-    + "|".join(sorted(map(re.escape, _DEEP_KEYWORDS), key=len, reverse=True))
+    + "|".join(
+        cast(
+            list[LiteralString],
+            sorted(map(re.escape, _DEEP_KEYWORDS), key=len, reverse=True),
+        )
+    )
     + r")\b",
     re.IGNORECASE,
 )
 _CODE_REGEX = re.compile(
     r"\b("
-    + "|".join(sorted(map(re.escape, _CODE_KEYWORDS), key=len, reverse=True))
+    + "|".join(
+        cast(
+            list[LiteralString],
+            sorted(map(re.escape, _CODE_KEYWORDS), key=len, reverse=True),
+        )
+    )
     + r")\b",
     re.IGNORECASE,
 )
@@ -310,6 +319,12 @@ def extract_current_query(
     # Process system prompt first if it is short
     if system_prompt:
         system_text = extract_text_from_messages(None, system_prompt)
+        # Strip ponytail instructions to prevent them from acting as false positive complexity signals
+        from config.ponytail import PONYTAIL_FULL, PONYTAIL_LITE, PONYTAIL_ULTRA
+
+        for pattern in (PONYTAIL_LITE, PONYTAIL_FULL, PONYTAIL_ULTRA):
+            if pattern in system_text:
+                system_text = system_text.replace(pattern, "")
         system_words = re.findall(r"\w+", system_text.lower())
         if len(system_words) <= 150:
             parts.append(system_text)
@@ -404,15 +419,33 @@ def route_model_tier(
     if allow_opus and (has_deep_signal or word_count > 1200):
         return ModelRoutingDecision("opus", "deep_signal")
 
+    has_tool_activity = False
+    if messages:
+        for msg in messages:
+            content = getattr(msg, "content", None)
+            if content is None and isinstance(msg, dict):
+                content = msg.get("content")
+            if isinstance(content, list):
+                for block in content:
+                    block_type = getattr(block, "type", "")
+                    if block_type == "" and isinstance(block, dict):
+                        block_type = block.get("type", "")
+                    if block_type in ("tool_use", "tool_result"):
+                        has_tool_activity = True
+                        break
+            if has_tool_activity:
+                break
+
     if (
-        word_count <= 40
+        not has_tool_activity
+        and word_count <= 40
         and not has_code_marker
         and not has_code_signal
         and not has_deep_signal
     ):
         return ModelRoutingDecision("haiku", "short_simple_prompt")
 
-    if has_code_signal or has_code_marker or tool_count > 0:
+    if has_code_signal or has_code_marker or has_tool_activity or tool_count > 0:
         return ModelRoutingDecision("sonnet", "code_or_tool_signal")
 
     return ModelRoutingDecision(base_tier, "default")

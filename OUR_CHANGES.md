@@ -20,8 +20,10 @@ operational contract for Claude Code and VSCode.
   for each routed request.
 - This fork adapts Anthropic-style `system` messages for OpenAI-compatible NIM
   backends by folding system content into the first user turn.
+- This fork intercepts simple connectivity commands like `"ping"` at the proxy layer, responding immediately with `"pong"` to save 100% of tokens and avoid LLM processing.
+- This fork automatically prunes system prompts (removing `<example>` blocks) and strips tools when routing to the `haiku` (Level 1) tier, preventing lightweight models from getting confused (resolving the issue of returning `"4"` or placeholders) and saving ~10k tokens per request.
 - This fork includes tests for auto-routing behavior, manual prompt overrides,
-  NVIDIA NIM message adaptation, and Opus gating.
+  NVIDIA NIM message adaptation, Opus gating, and Haiku optimizations.
 
 The main fork-specific files and edits are:
 
@@ -30,6 +32,10 @@ The main fork-specific files and edits are:
 - `config/settings.py`: auto-model settings and request-model resolution.
 - `api/models/anthropic.py`: request routing, model metadata, prompt override
   stripping, and `AUTO_MODEL_ROUTE` logging.
+- `api/detection.py`: query classification including `is_ping_request`.
+- `api/optimization_handlers.py`: fast-path responses including `try_ping_mock`.
+- `providers/common/message_converter.py`: tool stripping and system prompt pruning for the `haiku` model tier.
+- `providers/openai_compat.py`: `GenericOpenAICompatibleProvider` class for direct OpenAI compat endpoints (Cohere, Cerebras, Grok).
 - `providers/nvidia_nim/request.py`: Claude Code compatible message conversion
   for NVIDIA NIM.
 - `providers/logging_utils.py`: compact route metadata in request logs.

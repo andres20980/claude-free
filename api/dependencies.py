@@ -8,6 +8,7 @@ from config.settings import get_settings as _get_settings
 from providers.base import BaseProvider, ProviderConfig
 from providers.common import get_user_facing_error_message
 from providers.exceptions import AuthenticationError
+from providers.google_ai_studio import GoogleAIStudioProvider
 from providers.lmstudio import LMStudioProvider
 from providers.nvidia_nim import NVIDIA_NIM_BASE_URL, NvidiaNimProvider
 from providers.open_router import OPENROUTER_BASE_URL, OpenRouterProvider
@@ -69,13 +70,96 @@ def _create_provider_for_type(provider_type: str, settings: Settings) -> BasePro
             http_connect_timeout=settings.http_connect_timeout,
         )
         return LMStudioProvider(config)
+    if provider_type == "google_ai_studio":
+        config = ProviderConfig(
+            api_key=settings.google_ai_studio_api_key,
+            base_url=None,  # Will use default base URL
+            rate_limit=settings.provider_rate_limit,
+            rate_window=settings.provider_rate_window,
+            max_concurrency=settings.provider_max_concurrency,
+            http_read_timeout=settings.http_read_timeout,
+            http_write_timeout=settings.http_write_timeout,
+            http_connect_timeout=settings.http_connect_timeout,
+        )
+        return GoogleAIStudioProvider(config)
+    if provider_type == "cohere":
+        if not settings.cohere_api_key or not settings.cohere_api_key.strip():
+            raise AuthenticationError(
+                "COHERE_API_KEY is not set. Add it to your .env file."
+            )
+        config = ProviderConfig(
+            api_key=settings.cohere_api_key,
+            base_url="https://api.cohere.ai/compatibility/v1",
+            rate_limit=settings.provider_rate_limit,
+            rate_window=settings.provider_rate_window,
+            max_concurrency=settings.provider_max_concurrency,
+            http_read_timeout=settings.http_read_timeout,
+            http_write_timeout=settings.http_write_timeout,
+            http_connect_timeout=settings.http_connect_timeout,
+        )
+        from providers.openai_compat import GenericOpenAICompatibleProvider
+
+        return GenericOpenAICompatibleProvider(
+            config,
+            provider_name="COHERE",
+            base_url="https://api.cohere.ai/compatibility/v1",
+            api_key=settings.cohere_api_key,
+        )
+    if provider_type == "cerebras":
+        if not settings.cerebras_api_key or not settings.cerebras_api_key.strip():
+            raise AuthenticationError(
+                "CEREBRAS_API_KEY is not set. Add it to your .env file."
+            )
+        config = ProviderConfig(
+            api_key=settings.cerebras_api_key,
+            base_url="https://api.cerebras.ai/v1",
+            rate_limit=settings.provider_rate_limit,
+            rate_window=settings.provider_rate_window,
+            max_concurrency=settings.provider_max_concurrency,
+            http_read_timeout=settings.http_read_timeout,
+            http_write_timeout=settings.http_write_timeout,
+            http_connect_timeout=settings.http_connect_timeout,
+        )
+        from providers.openai_compat import GenericOpenAICompatibleProvider
+
+        return GenericOpenAICompatibleProvider(
+            config,
+            provider_name="CEREBRAS",
+            base_url="https://api.cerebras.ai/v1",
+            api_key=settings.cerebras_api_key,
+        )
+    if provider_type == "grok":
+        if not settings.grok_api_key or not settings.grok_api_key.strip():
+            raise AuthenticationError(
+                "GROK_API_KEY is not set. Add it to your .env file."
+            )
+        config = ProviderConfig(
+            api_key=settings.grok_api_key,
+            base_url="https://api.x.ai/v1",
+            rate_limit=settings.provider_rate_limit,
+            rate_window=settings.provider_rate_window,
+            max_concurrency=settings.provider_max_concurrency,
+            http_read_timeout=settings.http_read_timeout,
+            http_write_timeout=settings.http_write_timeout,
+            http_connect_timeout=settings.http_connect_timeout,
+        )
+        from providers.openai_compat import GenericOpenAICompatibleProvider
+
+        return GenericOpenAICompatibleProvider(
+            config,
+            provider_name="GROK",
+            base_url="https://api.x.ai/v1",
+            api_key=settings.grok_api_key,
+        )
+
+    supported_providers = (
+        "nvidia_nim, open_router, lmstudio, google_ai_studio, cohere, cerebras, grok"
+    )
     logger.error(
-        "Unknown provider_type: '{}'. Supported: 'nvidia_nim', 'open_router', 'lmstudio'",
-        provider_type,
+        f"Unknown provider_type: '{provider_type}'. Supported: {supported_providers}"
     )
     raise ValueError(
-        f"Unknown provider_type: '{provider_type}'. "
-        f"Supported: 'nvidia_nim', 'open_router', 'lmstudio'"
+        f"Unknown provider_type: '{provider_type}'. Supported: {supported_providers}"
     )
 
 

@@ -10,6 +10,7 @@ from api.dependencies import (
     get_settings,
 )
 from config.nim import NimSettings
+from providers.google_ai_studio import GoogleAIStudioProvider
 from providers.lmstudio import LMStudioProvider
 from providers.nvidia_nim import NvidiaNimProvider
 from providers.open_router import OpenRouterProvider
@@ -26,6 +27,7 @@ def _make_mock_settings(**overrides):
     mock.provider_max_concurrency = 5
     mock.open_router_api_key = "test_openrouter_key"
     mock.lm_studio_base_url = "http://localhost:1234/v1"
+    mock.google_ai_studio_api_key = "test_google_key"
     mock.nim = NimSettings()
     mock.http_read_timeout = 300.0
     mock.http_write_timeout = 10.0
@@ -79,7 +81,7 @@ async def test_cleanup_provider():
 
         await cleanup_provider()
 
-        provider._client.aclose.assert_called_once()
+        provider._client.close.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -119,6 +121,24 @@ async def test_get_provider_lmstudio():
         assert isinstance(provider, LMStudioProvider)
         assert provider._base_url == "http://localhost:1234/v1"
         assert provider._api_key == "lm-studio"
+
+
+@pytest.mark.asyncio
+async def test_get_provider_google_ai_studio():
+    """Test that provider_type=google_ai_studio returns GoogleAIStudioProvider."""
+    with patch("api.dependencies.get_settings") as mock_settings:
+        mock_settings.return_value = _make_mock_settings(
+            provider_type="google_ai_studio"
+        )
+
+        provider = get_provider()
+
+        assert isinstance(provider, GoogleAIStudioProvider)
+        assert (
+            provider._base_url
+            == "https://generativelanguage.googleapis.com/v1beta/openai"
+        )
+        assert provider._api_key == "test_google_key"
 
 
 @pytest.mark.asyncio
@@ -220,7 +240,7 @@ async def test_cleanup_provider_aclose_raises():
         provider = get_provider()
         assert isinstance(provider, NvidiaNimProvider)
         provider._client = AsyncMock()
-        provider._client.aclose = AsyncMock(side_effect=RuntimeError("cleanup failed"))
+        provider._client.close = AsyncMock(side_effect=RuntimeError("cleanup failed"))
 
         # Should propagate the error
         with pytest.raises(RuntimeError, match="cleanup failed"):
@@ -287,5 +307,5 @@ async def test_cleanup_provider_cleans_all():
 
         await cleanup_provider()
 
-        nim._client.aclose.assert_called_once()
-        lmstudio._client.aclose.assert_called_once()
+        nim._client.close.assert_called_once()
+        lmstudio._client.close.assert_called_once()

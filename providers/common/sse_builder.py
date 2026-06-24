@@ -1,6 +1,7 @@
 """SSE event builder for Anthropic-format streaming responses."""
 
 import json
+import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
@@ -134,14 +135,22 @@ class ContentBlockManager:
 class SSEBuilder:
     """Builder for Anthropic SSE streaming events."""
 
-    def __init__(self, message_id: str, model: str, input_tokens: int = 0):
+    def __init__(
+        self,
+        message_id: str,
+        model: str,
+        input_tokens: int = 0,
+        tier: str | None = None,
+    ):
         self.message_id = message_id
         self.model = model
         self.input_tokens = input_tokens
+        self.tier = tier
         self.blocks = ContentBlockManager()
         self._accumulated_text_parts: list[str] = []
         self._accumulated_reasoning_parts: list[str] = []
         self._metadata_prepended = False
+        self.start_time = time.time()
 
     def _format_event(self, event_type: str, data: dict[str, Any]) -> str:
         """Format as SSE string."""
@@ -271,7 +280,25 @@ class SSEBuilder:
         prefix = ""
         if not self._metadata_prepended:
             self._metadata_prepended = True
-            prefix = f"\033[90m[Model: \033[1;36m{self.model}\033[0;90m, \033[1;32m{self.input_tokens}\033[0;90m tokens]\033[0m\n"
+            elapsed = time.time() - self.start_time
+            display_model = self.model
+            if self.tier:
+                t = self.tier.lower()
+                if "haiku" in t:
+                    display_model = "1"
+                elif "sonnet" in t:
+                    display_model = "2"
+                elif "opus" in t:
+                    display_model = "3"
+            else:
+                name_lower = self.model.lower()
+                if any(x in name_lower for x in ("haiku", "flash", "3b", "small")):
+                    display_model = "1"
+                elif any(x in name_lower for x in ("opus", "pro", "large", "405b")):
+                    display_model = "3"
+                else:
+                    display_model = "2"
+            prefix = f"\033[90m[Model: \033[1;36m{display_model}\033[0;90m, \033[1;32m{self.input_tokens}\033[0;90m tokens, \033[1;33m{elapsed:.1f}s\033[0;90m]\033[0m\n"
         return self.content_block_delta(
             self.blocks.text_index, "text_delta", prefix + content
         )
