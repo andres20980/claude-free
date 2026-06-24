@@ -20,6 +20,7 @@ def build_request_body(request_data: Any) -> dict:
         request_data,
         default_max_tokens=OPENROUTER_DEFAULT_MAX_TOKENS,
         include_reasoning_for_openrouter=True,
+        max_output_limit=None,
     )
 
     # OpenRouter reasoning: extra_body={"reasoning": {"enabled": True}}

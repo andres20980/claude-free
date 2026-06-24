@@ -199,6 +199,7 @@ def build_base_request_body(
     *,
     default_max_tokens: int | None = None,
     include_reasoning_for_openrouter: bool = False,
+    max_output_limit: int | None = 4096,
 ) -> dict[str, Any]:
     """Build the common parts of an OpenAI-format request body.
 
@@ -228,6 +229,8 @@ def build_base_request_body(
     body: dict[str, Any] = {"model": request_data.model, "messages": messages}
 
     max_tokens = getattr(request_data, "max_tokens", None)
+    if max_tokens is not None and max_output_limit is not None:
+        max_tokens = min(max_tokens, max_output_limit)
     set_if_not_none(body, "max_tokens", max_tokens or default_max_tokens)
     set_if_not_none(body, "temperature", getattr(request_data, "temperature", None))
     set_if_not_none(body, "top_p", getattr(request_data, "top_p", None))

@@ -489,3 +489,20 @@ class TestHaikuOptimizations:
         assert "tools" in body
         assert len(body["tools"]) == 1
         assert body["tool_choice"] == "auto"
+
+    def test_build_base_request_body_max_output_limit(self):
+        """Should cap max_tokens to max_output_limit when it is specified."""
+        from providers.common.message_converter import build_base_request_body
+
+        class MockRequest:
+            def __init__(self):
+                self.model = "test-model"
+                self.messages = [MockMessage("user", "Hello")]
+                self.max_tokens = 32000
+
+        req = MockRequest()
+        body = build_base_request_body(req, max_output_limit=4096)
+        assert body["max_tokens"] == 4096
+
+        body_no_limit = build_base_request_body(req, max_output_limit=None)
+        assert body_no_limit["max_tokens"] == 32000

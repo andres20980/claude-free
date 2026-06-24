@@ -17,7 +17,9 @@ def build_request_body(request_data: Any) -> dict:
         len(getattr(request_data, "messages", [])),
     )
     body = build_base_request_body(
-        request_data, default_max_tokens=GEMINI_DEFAULT_MAX_TOKENS
+        request_data,
+        default_max_tokens=GEMINI_DEFAULT_MAX_TOKENS,
+        max_output_limit=8192,
     )
 
     logger.debug(
