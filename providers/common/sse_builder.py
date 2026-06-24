@@ -298,7 +298,7 @@ class SSEBuilder:
                     display_model = "3"
                 else:
                     display_model = "2"
-            prefix = f"\033[90m[Model: \033[1;36m{display_model}\033[0;90m, \033[1;32m{self.input_tokens}\033[0;90m tokens, \033[1;33m{elapsed:.1f}s\033[0;90m]\033[0m\n"
+            prefix = f"[Model: {display_model}, {self.input_tokens} tokens, {elapsed:.1f}s]\n"
         return self.content_block_delta(
             self.blocks.text_index, "text_delta", prefix + content
         )
