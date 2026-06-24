@@ -79,6 +79,51 @@ def test_convert_tools():
     assert result[1]["function"]["description"] == ""  # Check default empty string
 
 
+def test_convert_tools_untyped_properties():
+    # Input schema where various components are missing types
+    tools = [
+        MockTool(
+            "untyped_tool",
+            "Untyped desc",
+            {
+                "properties": {
+                    "args": {"description": "This lacks a type and defaults to string"},
+                    "nested_obj": {
+                        "properties": {
+                            "inner_untyped": {
+                                "description": "Inner untyped, defaults to string"
+                            }
+                        }
+                    },
+                    "array_prop": {
+                        "items": {"description": "Item lacks type, defaults to string"}
+                    },
+                }
+            },
+        )
+    ]
+    result = AnthropicToOpenAIConverter.convert_tools(tools)
+    assert len(result) == 1
+    params = result[0]["function"]["parameters"]
+
+    # Root parameter should have type "object" inferred because it has properties
+    assert params["type"] == "object"
+
+    # 'args' should have type "string"
+    assert params["properties"]["args"]["type"] == "string"
+
+    # 'nested_obj' should have type "object" because it has properties
+    assert params["properties"]["nested_obj"]["type"] == "object"
+    assert (
+        params["properties"]["nested_obj"]["properties"]["inner_untyped"]["type"]
+        == "string"
+    )
+
+    # 'array_prop' should have type "array" because it has items
+    assert params["properties"]["array_prop"]["type"] == "array"
+    assert params["properties"]["array_prop"]["items"]["type"] == "string"
+
+
 # --- Message Conversion Tests: User ---
 
 

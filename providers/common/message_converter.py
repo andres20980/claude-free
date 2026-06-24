@@ -19,6 +19,76 @@ def get_block_type(block: Any) -> str | None:
     return get_block_attr(block, "type")
 
 
+def sanitize_json_schema(schema: Any) -> Any:
+    """Recursively ensure that all object definitions and properties in a JSON Schema have a type."""
+    if not isinstance(schema, dict):
+        return schema
+
+    schema = dict(schema)
+
+    if "properties" in schema and "type" not in schema:
+        schema["type"] = "object"
+
+    if "items" in schema and "type" not in schema:
+        schema["type"] = "array"
+
+    if "properties" in schema and isinstance(schema["properties"], dict):
+        properties = {}
+        for prop_name, prop_schema in schema["properties"].items():
+            sanitized_prop = sanitize_json_schema(prop_schema)
+            if isinstance(sanitized_prop, dict) and "type" not in sanitized_prop:
+                if (
+                    "properties" in sanitized_prop
+                    or "additionalProperties" in sanitized_prop
+                ):
+                    sanitized_prop["type"] = "object"
+                elif "items" in sanitized_prop:
+                    sanitized_prop["type"] = "array"
+                else:
+                    sanitized_prop["type"] = "string"
+            properties[prop_name] = sanitized_prop
+        schema["properties"] = properties
+
+    if "items" in schema:
+        if isinstance(schema["items"], dict):
+            sanitized_items = sanitize_json_schema(schema["items"])
+            if "type" not in sanitized_items:
+                if (
+                    "properties" in sanitized_items
+                    or "additionalProperties" in sanitized_items
+                ):
+                    sanitized_items["type"] = "object"
+                elif "items" in sanitized_items:
+                    sanitized_items["type"] = "array"
+                else:
+                    sanitized_items["type"] = "string"
+            schema["items"] = sanitized_items
+        elif isinstance(schema["items"], list):
+            schema["items"] = [sanitize_json_schema(item) for item in schema["items"]]
+
+    for combiner in ["allOf", "anyOf", "oneOf"]:
+        if combiner in schema and isinstance(schema[combiner], list):
+            schema[combiner] = [sanitize_json_schema(item) for item in schema[combiner]]
+
+    if "not" in schema:
+        schema["not"] = sanitize_json_schema(schema["not"])
+
+    if "additionalProperties" in schema and isinstance(
+        schema["additionalProperties"], dict
+    ):
+        sanitized_ap = sanitize_json_schema(schema["additionalProperties"])
+        if "type" not in sanitized_ap:
+            if "properties" in sanitized_ap or "additionalProperties" in sanitized_ap:
+                sanitized_ap["type"] = "object"
+            elif "items" in sanitized_ap:
+                sanitized_ap["type"] = "array"
+            else:
+                sanitized_ap["type"] = "string"
+        schema["additionalProperties"] = sanitized_ap
+
+    return schema
+
+
 class AnthropicToOpenAIConverter:
     """Converts Anthropic message format to OpenAI format."""
 
@@ -163,7 +233,7 @@ class AnthropicToOpenAIConverter:
                 "function": {
                     "name": tool.name,
                     "description": tool.description or "",
-                    "parameters": tool.input_schema,
+                    "parameters": sanitize_json_schema(tool.input_schema),
                 },
             }
             for tool in tools
